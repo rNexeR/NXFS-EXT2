@@ -31,3 +31,8 @@
 # Debug files
 *.dSYM/
 *.su
+
+#generated device dir and fs.ext2
+device
+fs.ext2
+bin
