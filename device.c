@@ -6,6 +6,12 @@ int read_block(void* buffer, uint32 block_number, uint32 size_of_block) {
   return ( fread(buffer, 1, size_of_block, f) == size_of_block );
 }
 
+int write_block(void* buffer, uint32 block_number, uint32 size_of_block) {
+  fseek(f, block_number*size_of_block, SEEK_SET);
+  
+  return ( fwrite(buffer, 1, size_of_block, f) == size_of_block );
+}
+
 int device_read(void* buffer, uint32 size){  
   return ( fread(buffer, 1, size, f) == size );
 }

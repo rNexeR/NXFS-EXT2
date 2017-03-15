@@ -137,11 +137,37 @@ void read_inode_bitmap(void *buffer, int group_number)
     read_block(buffer, block_number, size_of_block);
 }
 
+void inode_bitmap_set(uint32 inode_number, uint8 state){
+    int inode_group, inode_index;
+    locate(inode_number, es.s_inodes_per_group, &inode_group, &inode_index);
+
+    byte buffer[size_of_block];
+    read_inode_bitmap(buffer, inode_group);
+    if(state)
+        bitmapSet(buffer, inode_index);
+    else
+        bitmapReset(buffer, inode_index);
+    write_block(buffer, groups_table[inode_group].bg_inode_bitmap, size_of_block);
+}
+
+void block_bitmat_set(uint32 inode_number, uint8 state){
+    int block_group, block_index;
+    locate(inode_number, es.s_blocks_per_group, &block_group, &block_index);
+
+    byte buffer[size_of_block];
+    read_inode_bitmap(buffer, block_group);
+    if(state)
+        bitmapSet(buffer, block_index);
+    else
+        bitmapReset(buffer, block_index);
+    write_block(buffer, groups_table[block_group].bg_block_bitmap, size_of_block);
+}
+
 //INODES
-struct s_inode read_inode(int inode_number)
+struct s_inode read_inode(uint32 inode_number)
 {
     int inode_group, inode_index;
-    locate_inode(inode_number, es.s_inodes_per_group, &inode_group, &inode_index);
+    locate(inode_number, es.s_inodes_per_group, &inode_group, &inode_index);
 
     struct s_inode inode;
     char inode_buff[es.s_inode_size];
@@ -171,7 +197,7 @@ struct s_inode read_inode(int inode_number)
     return inode;
 }
 
-int get_free_group_inode(int group_number)
+int get_free_group_inode(uint32 group_number)
 {
     byte buffer[size_of_block];
     read_inode_bitmap(buffer, group_number);
@@ -181,6 +207,7 @@ int get_free_group_inode(int group_number)
     return bitmapSearch(buffer, 0, size_of_block, start);
 }
 
+//ENTRIES
 uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
 {
     if (strlen(path) == 1 && strcmp(path, "/") == 0)
@@ -244,6 +271,8 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
     return 0;
 }
 
+// void get_entry_stat
+
 //TEST
 void test()
 {
@@ -277,6 +306,15 @@ void test()
     printf("Indirect blocks %lu\n", indirect_blocks_count);
     printf("D_Indirect blocks %lu\n", d_indirect_blocks_count);
     printf("T_Indirect blocks %lu\n", t_indirect_blocks_count);
+
+    // char* str = "/folder";
+    // printf("%s\n", str);
+    // uint32 len = strlen(str);
+
+    // char dir[len];
+    // char name[len];
+    // getNewDir(str, dir, name);
+    // printf("path %s parent_dir %s name %s\n", str, dir, name);
 }
 
 //FUSE FUNCTIONS
@@ -598,7 +636,7 @@ int nxfs_rmdir(const char *path)
 
 int nxfs_mkdir(const char *path, mode_t mode)
 {
-    printf("mkdir\n");
+    printf("mkdir %s mode %x\n", path, mode);
     return 0;
 }
 
@@ -622,6 +660,6 @@ int nxfs_mknod(const char *path, mode_t mode, dev_t dev)
 
 int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 {
-    printf("create %s\n", path);
+    printf("create %s mode %x\n", path, mode);
     return 0;
 }

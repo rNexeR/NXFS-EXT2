@@ -8,6 +8,7 @@ extern "C" {
 #include <string.h>
 
 unsigned int findChar(char* source, char searched);
+void getNewDir(const char* oldPath, char* parent_directory, char* name);
 
 #ifdef __cplusplus
 }

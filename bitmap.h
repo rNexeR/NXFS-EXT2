@@ -20,6 +20,7 @@ int bitmapGet   (byte *, int);
 void bitmapSet   (byte *, int);
 void bitmapReset (byte *, int);
 int  bitmapSearch(byte *, int, int, int);
+void locate(int position, int positions_per_group, int* group, int* index);
 
 #ifdef __cplusplus
 }
