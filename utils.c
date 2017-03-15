@@ -10,7 +10,7 @@ unsigned int findChar(char* source, char searched){
 	return -1;
 }
 
-void getNewDir(const char* oldPath, char* parent_directory, char* name){
+void parseNewEntry(const char* oldPath, char* parent_directory, char* name){
 	unsigned int len = strlen(oldPath);
 	bzero(parent_directory, len);
 	bzero(name, len);
