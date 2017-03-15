@@ -46,7 +46,7 @@ uint32 current_file_inode;
 
 void read_group_descriptors();
 int read_sb();
-struct s_inode read_inode(int);
+struct s_inode read_inode(uint32);
 int get_free_group_inode(int);
 
 void read_t_indirect_block(void *, uint32, uint32);
@@ -59,6 +59,10 @@ void read_inode_bitmap(void *buffer, int group_number);
 
 int nxfs_get_attr(const char *path, struct stat *statbuf);
 uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
+
+struct s_dir_entry2* find_last_entry(struct s_inode inode);
+struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name);
+struct s_dir_entry2 find_previous_entry(struct s_inode inode, char *entry_name);
 
 void nxfs_stat_entry(const char *path, struct stat *statbuf);
 int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo);

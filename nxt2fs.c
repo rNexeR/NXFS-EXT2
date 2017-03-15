@@ -137,26 +137,28 @@ void read_inode_bitmap(void *buffer, int group_number)
     read_block(buffer, block_number, size_of_block);
 }
 
-void inode_bitmap_set(uint32 inode_number, uint8 state){
+void inode_bitmap_set(uint32 inode_number, uint8 state)
+{
     int inode_group, inode_index;
     locate(inode_number, es.s_inodes_per_group, &inode_group, &inode_index);
 
     byte buffer[size_of_block];
     read_inode_bitmap(buffer, inode_group);
-    if(state)
+    if (state)
         bitmapSet(buffer, inode_index);
     else
         bitmapReset(buffer, inode_index);
     write_block(buffer, groups_table[inode_group].bg_inode_bitmap, size_of_block);
 }
 
-void block_bitmat_set(uint32 inode_number, uint8 state){
+void block_bitmat_set(uint32 inode_number, uint8 state)
+{
     int block_group, block_index;
     locate(inode_number, es.s_blocks_per_group, &block_group, &block_index);
 
     byte buffer[size_of_block];
     read_inode_bitmap(buffer, block_group);
-    if(state)
+    if (state)
         bitmapSet(buffer, block_index);
     else
         bitmapReset(buffer, block_index);
@@ -219,7 +221,7 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
 
         uint16 dashPos = findChar(path, '/');
         char sub_path[dashPos + 2];
-        bzero(sub_path, dashPos+1);
+        bzero(sub_path, dashPos + 1);
         strncpy(sub_path, path, dashPos);
         sub_path[dashPos + 1] = 0;
 
@@ -227,52 +229,67 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
             printf("lookup path: %s subpath: %s\n", path, sub_path);
 
         uint8 hasChild = strlen(path) > strlen(sub_path);
-        unsigned char block[size_of_block];
+        // unsigned char block[size_of_block];
         struct s_inode current_inode = read_inode(current_inode_number);
-
-        uint32 current_block = 0;
-
-        // read_block(block, dir_inode.i_direct[0], size_of_block);
-        read_inode_logic_block(block, current_inode, current_block++);
-
-        uint16 c_size = 0;
-
-        entry = (struct s_dir_entry2 *)block;
-
-        while (c_size < current_inode.i_size)
-        {
-            // char test;
-            // fgets(&test, 1, stdin);
-            if (c_size > 0 && c_size % size_of_block == 0)
-                read_inode_logic_block(block, current_inode, current_block++);
-
-            char file_name[EXT2_NAME_LEN + 1];
-
-            memcpy(file_name, entry->name, entry->name_len);
-
-            file_name[entry->name_len] = 0; /* append null char to the file name */
-            // printf("%lu %s\n", entry->inode, file_name);
-
-            c_size += entry->rec_len;
-
-            if (strcmp(file_name, sub_path) == 0)
-            {
-                if (!hasChild)
-                {
-                    return entry->inode;
-                }
-                return lookup_entry_inode(path + dashPos, entry->inode);
-            }
-
-            entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
-        }
+        entry = find_entry(current_inode, sub_path);
+        if(entry == NULL)
+            return 0;
+        if(hasChild)
+            return lookup_entry_inode(path+dashPos, entry->inode);
+        uint32 inode = entry->inode;
+        free(entry);
+        return inode;
     }
     // printf("lue entry_inode not found\n");
     return 0;
 }
 
-struct s_dir_entry2 find_last_entry(struct s_inode inode){
+struct s_dir_entry2* find_last_entry(struct s_inode inode)
+{
+    struct s_dir_entry2 *entry;
+    unsigned char block[size_of_block];
 
+    uint32 current_block = 0;
+
+    // read_block(block, dir_inode.i_direct[0], size_of_block);
+    read_inode_logic_block(block, inode, current_block++);
+
+    uint16 c_size = 0;
+
+    entry = (struct s_dir_entry2 *)block;
+
+    while (c_size < inode.i_size)
+    {
+        // char test;
+        // fgets(&test, 1, stdin);
+        if (c_size > 0 && c_size % size_of_block == 0)
+            read_inode_logic_block(block, inode, current_block++);
+
+        char file_name[EXT2_NAME_LEN + 1];
+
+        memcpy(file_name, entry->name, entry->name_len);
+
+        file_name[entry->name_len] = 0; /* append null char to the file name */
+        // printf("%lu %s\n", entry->inode, file_name);
+
+        c_size += entry->rec_len;
+
+        if(c_size >= inode.i_size)
+            break;
+
+        entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
+    }
+
+    struct s_dir_entry2* ret = (struct s_dir_entry2*) malloc(sizeof(struct s_dir_entry2));
+    ret->inode = entry->inode;
+    ret->rec_len = entry->rec_len;
+    ret->name_len = entry->name_len;
+    ret->file_type = entry->file_type;
+    strncpy(ret->name, entry->name, entry->name_len);
+    ret->block_number = current_block-1;
+    ret->offset = c_size % size_of_block;
+
+    return ret;
 }
 
 struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name){
@@ -405,6 +422,15 @@ void test()
     printf("D_Indirect blocks %lu\n", d_indirect_blocks_count);
     printf("T_Indirect blocks %lu\n", t_indirect_blocks_count);
 
+    struct s_inode inode;
+    inode = read_inode(ROOT_INO);
+    struct s_dir_entry2* entry = find_last_entry(inode);
+    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+
+    entry = find_entry(inode, "test");
+    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+
+
     // char* str = "/folder";
     // printf("%s\n", str);
     // uint32 len = strlen(str);
@@ -431,7 +457,7 @@ void nxfs_init(struct fuse_conn_info *conn)
 
 int nxfs_get_attr(const char *path, struct stat *statbuf)
 {
-    if(print_info)
+    if (print_info)
         printf("getattr %s\n", path);
     memset(statbuf, 0, sizeof(struct stat));
 
@@ -441,7 +467,8 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
     path_copy[len] = 0;
 
     uint32 entry_inode = lookup_entry_inode(path_copy, ROOT_INO);
-    if (entry_inode == 0){
+    if (entry_inode == 0)
+    {
         printf("entry_inode not found for %s\n", path);
         return -ENOENT;
     }
@@ -464,14 +491,14 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
     statbuf->st_ino = 2;
     statbuf->st_blocks = dir_inode.i_blocks;
 
-    if(print_info)
+    if (print_info)
         printf("success\n");
     return 0;
 }
 
 int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo)
 {
-    if(print_info)
+    if (print_info)
         printf("read dir %s current_dir_inode %lu\n", path, current_dir_inode);
     // printf("FI_dir %lu\n", (uint64_t)fileInfo);
     struct s_dir_entry2 *entry;
@@ -529,7 +556,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
 
 int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
 {
-    if(print_info)
+    if (print_info)
         printf("opendir %s\n", path);
     // printf("FI_dir %lu\n", (uint64_t)fileInfo);
     // if (strlen(path) == 1 && strcmp(path, "/") == 0)
@@ -545,42 +572,42 @@ int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
     // }
     // else
     // {
-        uint32 len = strlen(path);
+    uint32 len = strlen(path);
 
-        if ((len != 1) && path[0] != '/')
-        {
-            printf("No permitido \n");
-            return -EPERM;
-        }
+    if ((len != 1) && path[0] != '/')
+    {
+        printf("No permitido \n");
+        return -EPERM;
+    }
 
-        char path_copy[len + 1];
-        strncpy(path_copy, path, len);
-        path_copy[len] = 0;
-        uint32 entry_inode = lookup_entry_inode(path_copy, ROOT_INO);
-        if (entry_inode > 0)
+    char path_copy[len + 1];
+    strncpy(path_copy, path, len);
+    path_copy[len] = 0;
+    uint32 entry_inode = lookup_entry_inode(path_copy, ROOT_INO);
+    if (entry_inode > 0)
+    {
+        struct s_inode dir_inode = read_inode(entry_inode);
+        if (is_dir(dir_inode.i_mode))
         {
-            struct s_inode dir_inode = read_inode(entry_inode);
-            if (is_dir(dir_inode.i_mode))
-            {
-                current_dir_inode = entry_inode;
-                struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
-                fh->f_inode = entry_inode;
-                fh->f_size = dir_inode.i_size;
-                fh->f_blocks_count = dir_inode.i_blocks;
-                fileInfo->fh = (uint64_t)fh;
-                return 0;
-            }
-            else
-            {
-                printf("No es directorio\n");
-                return -EPERM;
-            }
+            current_dir_inode = entry_inode;
+            struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
+            fh->f_inode = entry_inode;
+            fh->f_size = dir_inode.i_size;
+            fh->f_blocks_count = dir_inode.i_blocks;
+            fileInfo->fh = (uint64_t)fh;
+            return 0;
         }
         else
         {
-            printf("entry_inode not found for %s\n", path);
-            return -ENOENT;
+            printf("No es directorio\n");
+            return -EPERM;
         }
+    }
+    else
+    {
+        printf("entry_inode not found for %s\n", path);
+        return -ENOENT;
+    }
     // }
     return -ENOENT;
 }
@@ -605,7 +632,7 @@ int nxfs_statfs(const char *path, struct statvfs *statInfo)
 
 int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
 {
-    if(print_info)
+    if (print_info)
         printf("open %s\n", path);
 
     if (strlen(path) == 1 && strcmp(path, "/") == 0)
@@ -648,7 +675,7 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
 
 int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
-    if(print_info)
+    if (print_info)
         printf("read %s size %u offset %u\n", path, size, offset);
     //printf("current_file_inode %lu\n", current_file_inode);
 
