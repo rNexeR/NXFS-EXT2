@@ -46,7 +46,7 @@ uint32 current_file_inode;
 
 void read_group_descriptors();
 int read_sb();
-struct s_inode read_inode(int);
+struct s_inode read_inode(uint32);
 int get_free_group_inode(int);
 
 void read_t_indirect_block(void *, uint32, uint32);
