@@ -739,7 +739,12 @@ int nxfs_releasedir(const char *path, struct fuse_file_info *fileInfo)
     free((void *)fileInfo->fh);
     return 0;
 }
-
+int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
+{
+    printf("create %s mode %x\n", path, mode);
+    
+    return 0;
+}
 //NOT IMPLEMENTED, YET
 int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
@@ -780,11 +785,5 @@ int nxfs_unlink(const char *path)
 int nxfs_mknod(const char *path, mode_t mode, dev_t dev)
 {
     printf("mknod %s\n", path);
-    return 0;
-}
-
-int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
-{
-    printf("create %s mode %x\n", path, mode);
     return 0;
 }
