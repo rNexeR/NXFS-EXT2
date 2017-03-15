@@ -229,45 +229,16 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
             printf("lookup path: %s subpath: %s\n", path, sub_path);
 
         uint8 hasChild = strlen(path) > strlen(sub_path);
-        unsigned char block[size_of_block];
+        // unsigned char block[size_of_block];
         struct s_inode current_inode = read_inode(current_inode_number);
-
-        uint32 current_block = 0;
-
-        // read_block(block, dir_inode.i_direct[0], size_of_block);
-        read_inode_logic_block(block, current_inode, current_block++);
-
-        uint16 c_size = 0;
-
-        entry = (struct s_dir_entry2 *)block;
-
-        while (c_size < current_inode.i_size)
-        {
-            // char test;
-            // fgets(&test, 1, stdin);
-            if (c_size > 0 && c_size % size_of_block == 0)
-                read_inode_logic_block(block, current_inode, current_block++);
-
-            char file_name[EXT2_NAME_LEN + 1];
-
-            memcpy(file_name, entry->name, entry->name_len);
-
-            file_name[entry->name_len] = 0; /* append null char to the file name */
-            printf("%lu %s\n", entry->inode, file_name);
-
-            c_size += entry->rec_len;
-
-            if (strcmp(file_name, sub_path) == 0)
-            {
-                if (!hasChild)
-                {
-                    return entry->inode;
-                }
-                return lookup_entry_inode(path + dashPos, entry->inode);
-            }
-
-            entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
-        }
+        entry = find_entry(current_inode, sub_path);
+        if(entry == NULL)
+            return 0;
+        if(hasChild)
+            return lookup_entry_inode(path+dashPos, entry->inode);
+        uint32 inode = entry->inode;
+        free(entry);
+        return inode;
     }
     // printf("lue entry_inode not found\n");
     return 0;
@@ -363,10 +334,6 @@ struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name){
     return NULL;
 }
 
-struct s_dir_entry2 s(struct s_inode inode, char *entry_name)
-{
-}
-
 struct s_dir_entry2 find_previous_entry(struct s_inode inode, char *entry_name)
 {
 }
@@ -410,7 +377,11 @@ void test()
     struct s_inode inode;
     inode = read_inode(ROOT_INO);
     struct s_dir_entry2* entry = find_last_entry(inode);
-    printf("last entry of root: %s\n", entry->name);
+    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+
+    entry = find_entry(inode, "test");
+    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+
 
     // char* str = "/folder";
     // printf("%s\n", str);
