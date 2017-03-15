@@ -86,6 +86,8 @@ struct s_dir_entry2 {
 	uint8	name_len;		/* Name length */
 	uint8	file_type;
 	char	name[EXT2_NAME_LEN];	/* File name */
+	uint32 block_number;
+	uint32 offset;
 };
 
 struct s_file_handle{
