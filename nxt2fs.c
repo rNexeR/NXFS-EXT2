@@ -317,8 +317,56 @@ struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name){
     return NULL;
 }
 
-struct s_dir_entry2 find_previous_entry(struct s_inode inode, char* entry_name){
+struct s_dir_entry2* find_previous_entry(struct s_inode inode, const char* entry_name){
+    struct s_dir_entry2 *entry;
+    struct s_dir_entry2 *previous_entry = NULL;
+    unsigned char block[size_of_block];
+    uint32 current_block = 0;
+    read_inode_logic_block(block, inode, current_block++);
+    uint16 c_size = 0;
+    entry = (struct s_dir_entry2 *)block;
 
+    while (c_size < inode.i_size)
+    {
+        // char test;
+        // fgets(&test, 1, stdin);
+        if (c_size > 0 && c_size % size_of_block == 0)
+            read_inode_logic_block(block, inode, current_block++);
+
+        char file_name[EXT2_NAME_LEN + 1];
+
+        memcpy(file_name, entry->name, entry->name_len);
+
+        file_name[entry->name_len] = 0; /* append null char to the file name */
+        // printf("%lu %s\n", entry->inode, file_name);
+
+        c_size += entry->rec_len;
+
+        if (strcmp(file_name, entry_name) == 0)
+        {
+            if(previous_entry == NULL)
+                return NULL;
+            uint32 offset = (c_size % size_of_block)-entry->rec_len;
+            struct s_dir_entry2 *return_entry;
+            if(offset>=0){
+                return_entry = (struct s_dir_entry2 *)malloc(sizeof(struct s_dir_entry2));
+                return_entry->inode = previous_entry->inode;
+                return_entry->rec_len = previous_entry->rec_len;
+                return_entry->name_len = previous_entry->name_len;
+                return_entry->file_type = previous_entry->file_type;
+                strcpy(return_entry->name,previous_entry->name);
+                return_entry->block_number = current_block-1;
+                return_entry->offset;
+            }else{
+                return_entry = find_entry(inode, previous_entry->name);
+            }
+            
+            return return_entry;
+        }
+        previous_entry = entry
+        entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
+    }
+    return NULL;
 }
 
 // void get_entry_stat
