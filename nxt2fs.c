@@ -360,10 +360,10 @@ struct s_dir_entry2* find_previous_entry(struct s_inode inode, const char* entry
             }else{
                 return_entry = find_entry(inode, previous_entry->name);
             }
-            
+
             return return_entry;
         }
-        previous_entry = entry
+        previous_entry = entry;
         entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
     }
     return NULL;
