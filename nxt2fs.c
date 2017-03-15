@@ -783,15 +783,16 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
     printf("mkdir %s parent_dir %s mode %x\n", dir_name, parent, mode);
 
-    uint32 parent_inode = lookup_entry_inode(parent, ROOT_INO);
+    uint32 parent_inode_number = lookup_entry_inode(parent, ROOT_INO);
 
-    if(parent_inode == 0){
+    if(parent_inode_number == 0){
         return -EPERM;
     }
 
-    int parent_inode_group, parent_inode;
+    int parent_inode_group, parent_inode_index;
 
     // int new_inode = get_free_group_inode();
+    struct s_inode* parent_inode = read_inode(parent_inode_number);
 
     struct s_dir_entry2* parent_entry = find_last_entry(*parent_inode);
 
