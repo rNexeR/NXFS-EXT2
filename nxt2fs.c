@@ -271,7 +271,7 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
     return 0;
 }
 
-struct s_dir_entry2 find_last_entry(uint32 entry_inode){
+struct s_dir_entry2 find_last_entry(struct s_inode inode){
 
 }
 
