@@ -26,7 +26,7 @@ extern "C" {
 #define ENTRY_FILE 1
 #define ENTRY_BASE_SIZE 64
 
-static const int print_info = 0;
+static const int print_info = 1;
 
 static struct s_superblock es;
 static struct s_block_group_descriptor *groups_table;
@@ -48,7 +48,10 @@ uint32 current_file_inode;
 void read_group_descriptors();
 int read_sb();
 struct s_inode* read_inode(uint32);
-int get_free_group_inode(int);
+int get_free_group_inode(uint32);
+int get_free_block_in_group(uint32 group_number);
+int get_free_inode(uint32);
+int get_free_block(uint32);
 
 void read_t_indirect_block(void *, uint32, uint32);
 void read_d_indirect_block(void *, uint32, uint32);

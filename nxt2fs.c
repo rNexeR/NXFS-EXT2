@@ -199,14 +199,35 @@ struct s_inode* read_inode(uint32 inode_number)
     return inode;
 }
 
-int get_free_group_inode(uint32 group_number)
+int get_free_inode_in_group(uint32 group_number)
 {
     byte buffer[size_of_block];
     read_inode_bitmap(buffer, group_number);
-    int start = 0;
-    if (group_number == 0)
-        start = 10;
-    return bitmapSearch(buffer, 0, size_of_block, start);
+    return bitmapSearch(buffer, 0, size_of_block, 0);
+}
+
+int get_free_block_in_group(uint32 group_number){
+    byte buffer[size_of_block];
+    read_block_bitmap(buffer, group_number);
+    return bitmapSearch(buffer, 0, size_of_block, 0);
+}
+
+int get_free_inode(uint32 group_number){
+    int new_inode = get_free_inode_in_group(group_number);
+    int inode_group_offset = 1;
+    while(new_inode < 0 && group_number + (inode_group_offset) <= number_of_groups){
+        new_inode = get_free_inode_in_group(group_number + (inode_group_offset++));
+    }
+    return new_inode;
+}
+
+int get_free_block(uint32 group_number){
+    int new_block = get_free_block_in_group(group_number);
+    int block_group_offset = 1;
+    while(new_block < 0 && group_number + (block_group_offset) <= number_of_groups){
+        new_block = get_free_inode_in_group(group_number + (block_group_offset++));
+    }
+    return new_block;
 }
 
 //ENTRIES
@@ -423,18 +444,18 @@ void test()
     printf("D_Indirect blocks %lu\n", d_indirect_blocks_count);
     printf("T_Indirect blocks %lu\n", t_indirect_blocks_count);
 
-    struct s_inode* inode;
-    inode = read_inode(ROOT_INO);
-    struct s_dir_entry2* entry = find_last_entry(*inode);
-    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+    // struct s_inode* inode;
+    // inode = read_inode(ROOT_INO);
+    // struct s_dir_entry2* entry = find_last_entry(*inode);
+    // printf("last entry of root: %lu %s\n", entry->inode, entry->name);
 
-    entry = find_entry(*inode, "test");
-    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+    // entry = find_entry(*inode, "test");
+    // printf("last entry of root: %lu %s\n", entry->inode, entry->name);
 
-    entry = find_previous_entry(*inode, "test");
-    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+    // entry = find_previous_entry(*inode, "test");
+    // printf("last entry of root: %lu %s\n", entry->inode, entry->name);
 
-    free(inode);
+    // free(inode);
 
 
     // char* str = "/folder";
@@ -549,7 +570,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
 
         c_size += entry->rec_len;
         if (print_info)
-            printf("\t%u %s\n", entry->inode, file_name);
+            printf("rd-> \t%u %s\n", entry->inode, file_name);
         // filler(buf, file_name, NULL, c_size - entry->rec_len);
         filler(buf, file_name, NULL, 0);
 
@@ -790,16 +811,38 @@ int nxfs_mkdir(const char *path, mode_t mode)
     }
 
     int parent_inode_group, parent_inode_index;
+    locate(parent_inode_number, es.s_inodes_per_group, &parent_inode_group, &parent_inode_index);
 
-    // int new_inode = get_free_group_inode();
+    int new_inode = get_free_inode(parent_inode_group);
+    if(new_inode < 0)
+        return -ENOENT;
+
+    int new_inode_group, new_inode_index;
+    locate(new_inode, es.s_blocks_per_group, &new_inode_group, &new_inode_index);
+
+    int new_block = get_free_block(new_inode_group);
+    if(new_block < 0)
+        return -ENOENT;
+
     struct s_inode* parent_inode = read_inode(parent_inode_number);
 
-    struct s_dir_entry2* parent_entry = find_last_entry(*parent_inode);
+    struct s_dir_entry2* parent_last_entry = find_last_entry(*parent_inode);
 
-    if(parent_entry->offset % size_of_block >= ENTRY_BASE_SIZE + dir_name_len + 1){
+    struct s_dir_entry2 new_entry;
+    new_entry.inode = new_inode;
+    new_entry.rec_len = size_of_block;
+    // new_entry
+
+    if(parent_last_entry->offset % size_of_block >= ENTRY_BASE_SIZE + dir_name_len + 1){
+        char buffer[size_of_block];
+        read_inode_logic_block(buffer, *parent_inode, parent_last_entry->block_number);
+
+        uint32 new_rec_len = ENTRY_BASE_SIZE + parent_last_entry->name_len + 2;
+        memcpy(&buffer[parent_last_entry->offset + ENTRY_BASE_SIZE],  &new_rec_len, sizeof(uint32));
+
 
     }else{
-
+        // ask for new block entries
     }
 
 
