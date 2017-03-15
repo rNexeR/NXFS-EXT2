@@ -2,17 +2,21 @@
 
 int read_block(void* buffer, uint32 block_number, uint32 size_of_block) {
   fseek(f, block_number*size_of_block, SEEK_SET);
-  
+
   return ( fread(buffer, 1, size_of_block, f) == size_of_block );
 }
 
 int write_block(void* buffer, uint32 block_number, uint32 size_of_block) {
   fseek(f, block_number*size_of_block, SEEK_SET);
-  
+
   return ( fwrite(buffer, 1, size_of_block, f) == size_of_block );
 }
 
-int device_read(void* buffer, uint32 size){  
+int device_write(void *buffer, uint32 size){
+  return ( fwrite(buffer, 1, size, f) == size );
+}
+
+int device_read(void* buffer, uint32 size){
   return ( fread(buffer, 1, size, f) == size );
 }
 
@@ -22,7 +26,7 @@ void device_seek(uint32 offset){
 
 struct stat device_stat(){
   struct stat fileStat;
-  stat(device_path,&fileStat);  
+  stat(device_path,&fileStat);
   return fileStat;
 }
 

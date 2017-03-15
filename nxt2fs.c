@@ -174,7 +174,7 @@ struct s_inode* read_inode(uint32 inode_number)
     struct s_inode* inode = (struct s_inode*) malloc(sizeof(struct s_inode));
     char inode_buff[es.s_inode_size];
     int offset = es.s_inode_size * inode_index;
-    int base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
+    uint32 base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
 
     device_seek(base_pointer + offset);
     device_read(inode_buff, es.s_inode_size);
@@ -553,7 +553,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
     // read_block(block, dir_inode.i_direct[0], size_of_block);
     read_inode_logic_block(block, *dir_inode, current_block++);
 
-    uint16 c_size = 0;
+    uint32 c_size = 0;
 
     entry = (struct s_dir_entry2 *)block; /* first entry in the directory */
 
@@ -847,6 +847,18 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
 
     return 0;
+}
+
+int save_inode(struct s_inode inode, uint32 index){
+  int inode_group, inode_index;
+  locate(index, es.s_inodes_per_group, &inode_group, &inode_index);
+  char inode_buff[es.s_inode_size];
+  memcpy(inode_buff,(void *)&inode, es.s_inode_size);
+  int offset = es.s_inode_size * inode_index;
+  uint32 base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
+
+  device_seek(base_pointer + offset);
+  return device_write(inode_buff, es.s_inode_size);
 }
 
 int nxfs_truncate(const char *path, off_t newSize)
