@@ -20,7 +20,7 @@ void read_group_descriptors()
 
     device_seek(offset);
     printf("\n");
-    printf("size of block group %lu\n", sizeof(struct s_block_group_descriptor));
+    // printf("size of block group %lu\n", sizeof(struct s_block_group_descriptor));
 
     for (uint32 i = 0; i < number_of_groups; ++i)
     {
@@ -224,7 +224,7 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number)
             memcpy(file_name, entry->name, entry->name_len);
 
             file_name[entry->name_len] = 0; /* append null char to the file name */
-            printf("%lu %s\n", entry->inode, file_name);
+            // printf("%lu %s\n", entry->inode, file_name);
 
             c_size += entry->rec_len;
 
@@ -295,7 +295,8 @@ void nxfs_init(struct fuse_conn_info *conn)
 
 int nxfs_get_attr(const char *path, struct stat *statbuf)
 {
-    printf("getattr %s\n", path);
+    if(print_info)
+        printf("getattr %s\n", path);
     memset(statbuf, 0, sizeof(struct stat));
 
     uint32 len = strlen(path);
@@ -305,15 +306,15 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
 
     uint32 entry_inode = lookup_entry_inode(path_copy, ROOT_INO);
     if (entry_inode == 0){
-        printf("entry_inode not found\n");
+        printf("entry_inode not found for %s\n", path);
         return -ENOENT;
     }
 
-    printf("entry_inode %lu\n", entry_inode);
+    // printf("entry_inode %lu\n", entry_inode);
 
     struct s_inode dir_inode = read_inode(entry_inode);
 
-    printf("mode %lu\n", dir_inode.i_mode);
+    // printf("mode %lu\n", dir_inode.i_mode);
     // printf("links count \n", dir_inode.i_links_count);
     // printf("size \n", dir_inode.i_size);
     // printf("blocks \n", dir_inode.i_blocks);
@@ -327,13 +328,15 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
     statbuf->st_ino = 2;
     statbuf->st_blocks = dir_inode.i_blocks;
 
-    printf("success\n");
+    if(print_info)
+        printf("success\n");
     return 0;
 }
 
 int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo)
 {
-    printf("read dir %s current_dir_inode %lu\n", path, current_dir_inode);
+    if(print_info)
+        printf("read dir %s current_dir_inode %lu\n", path, current_dir_inode);
     // printf("FI_dir %lu\n", (uint64_t)fileInfo);
     struct s_dir_entry2 *entry;
 
@@ -390,21 +393,22 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
 
 int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
 {
-    printf("opendir %s\n", path);
+    if(print_info)
+        printf("opendir %s\n", path);
     // printf("FI_dir %lu\n", (uint64_t)fileInfo);
-    if (strlen(path) == 1 && strcmp(path, "/") == 0)
-    {
-        current_dir_inode = ROOT_INO;
-        struct s_inode dir_inode = read_inode(ROOT_INO);
-        struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
-        fh->f_inode = ROOT_INO;
-        fh->f_size = dir_inode.i_size;
-        fileInfo->fh = (uint64_t)fh;
-        printf("root ino\n");
-        return 0;
-    }
-    else
-    {
+    // if (strlen(path) == 1 && strcmp(path, "/") == 0)
+    // {
+    //     current_dir_inode = ROOT_INO;
+    //     struct s_inode dir_inode = read_inode(ROOT_INO);
+    //     struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
+    //     fh->f_inode = ROOT_INO;
+    //     fh->f_size = dir_inode.i_size;
+    //     fileInfo->fh = (uint64_t)fh;
+    //     printf("root ino\n");
+    //     return 0;
+    // }
+    // else
+    // {
         uint32 len = strlen(path);
 
         if ((len != 1) && path[0] != '/')
@@ -438,10 +442,10 @@ int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
         }
         else
         {
-            printf("entry_inode not found\n");
+            printf("entry_inode not found for %s\n", path);
             return -ENOENT;
         }
-    }
+    // }
     return -ENOENT;
 }
 
@@ -465,7 +469,8 @@ int nxfs_statfs(const char *path, struct statvfs *statInfo)
 
 int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
 {
-    printf("open %s\n", path);
+    if(print_info)
+        printf("open %s\n", path);
 
     if (strlen(path) == 1 && strcmp(path, "/") == 0)
         return -EPERM;
@@ -486,7 +491,7 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
             if (is_file(dir_inode.i_mode))
             {
                 current_file_inode = entry_inode;
-                printf("--> file inode %lu\n", entry_inode);
+                // printf("--> file inode %lu\n", entry_inode);
                 struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
                 fh->f_inode = entry_inode;
                 fh->f_size = dir_inode.i_size;
@@ -507,13 +512,14 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
 
 int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
-    printf("read %s size %u offset %u\n", path, size, offset);
+    if(print_info)
+        printf("read %s size %u offset %u\n", path, size, offset);
     //printf("current_file_inode %lu\n", current_file_inode);
 
     int bytes_to_read = size;
 
     struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
-    printf("fh->d_inode %lu fh->f_size %lu \n", fh->f_inode, fh->f_size);
+    // printf("fh->d_inode %lu fh->f_size %lu \n", fh->f_inode, fh->f_size);
 
     if (offset >= fh->f_size)
         return 0;
@@ -525,7 +531,7 @@ int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fus
     uint32 number_of_blocks = size / size_of_block;
     struct s_inode inode = read_inode(fh->f_inode);
 
-    printf("logic_block_number %lu number_of_blocks %lu size_in_blocks %lu\n", logic_block_number, number_of_blocks, inode.i_blocks);
+    // printf("logic_block_number %lu number_of_blocks %lu size_in_blocks %lu\n", logic_block_number, number_of_blocks, inode.i_blocks);
 
     for (int i = 0; i < number_of_blocks; i++)
     {
