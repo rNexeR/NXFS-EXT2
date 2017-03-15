@@ -428,11 +428,11 @@ void test()
     struct s_dir_entry2* entry = find_last_entry(*inode);
     printf("last entry of root: %lu %s\n", entry->inode, entry->name);
 
-    entry = find_entry(*inode, "test");
-    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
-
-    entry = find_previous_entry(*inode, "test");
-    printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+    // entry = find_entry(*inode, "test");
+    // printf("last entry of root: %lu %s\n", entry->inode, entry->name);
+    //
+    // entry = find_previous_entry(*inode, "test");
+    // printf("last entry of root: %lu %s\n", entry->inode, entry->name);
 
     free(inode);
 
@@ -556,7 +556,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
         entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
     }
     if (print_info)
-        printf("%u of %u\n", dir_inode->i_size, c_size);
+        printf("rd -> %u of %u\n", dir_inode->i_size, c_size);
     free(dir_inode);
     return 0;
 }
@@ -641,7 +641,7 @@ int nxfs_statfs(const char *path, struct statvfs *statInfo)
 
 int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
 {
-    if (print_info)
+    //if (print_info)
         printf("open %s\n", path);
 
     if (strlen(path) == 1 && strcmp(path, "/") == 0)
@@ -687,7 +687,7 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
 
 int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
-    if (print_info)
+    //if (print_info)
         printf("read %s size %u offset %u\n", path, size, offset);
     //printf("current_file_inode %lu\n", current_file_inode);
 
@@ -754,7 +754,13 @@ int nxfs_releasedir(const char *path, struct fuse_file_info *fileInfo)
 int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 {
     printf("create %s mode %x\n", path, mode);
-    
+    char *parent_dir = (char *)malloc(strlen(path));
+    char * name = (char *)malloc(strlen(path));
+
+    parseNewEntry(path, parent_dir, name);
+
+    printf("parent %s child %s\n",parent_dir, name );
+
     return 0;
 }
 //NOT IMPLEMENTED, YET
