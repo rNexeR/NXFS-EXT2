@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-#define FIRST_BLOCK_OFFSET 1024
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>

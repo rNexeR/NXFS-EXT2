@@ -1,10 +1,10 @@
 #include <stdint.h>
 
-#define uint16 unsigned short int
 #define uint32 unsigned int
+#define uint16 unsigned short int
 #define uint8 uint8_t
 #define EXT2_NAME_LEN 255
-#define EXT2_N_BLOCKS 12
+#define	EXT2_NDIR_BLOCKS		12
 
 struct s_superblock{
 	uint32 s_inodes_count;
@@ -34,6 +34,11 @@ struct s_superblock{
 	uint16 s_def_resgid;
 	uint32 s_firts_inode;
 	uint16 s_inode_size;
+	uint16 s_block_group_nr;
+	uint32 s_feature_compat;
+	uint32 s_feature_incompat;
+	uint32 s_feature_ro_compat;
+	uint16 s_uuid;
 };
 
 struct s_block_group_descriptor{
@@ -62,7 +67,7 @@ struct s_inode{
 	uint32 i_blocks;
 	uint32 i_flags;
 	uint32 i_osd1;
-	uint32 i_direct[EXT2_N_BLOCKS];
+	uint32 i_direct[EXT2_NDIR_BLOCKS];
 	uint32 i_indirect;
 	uint32 i_d_indirect;
 	uint32 i_t_indirect;
@@ -81,4 +86,10 @@ struct s_dir_entry2 {
 	uint8	name_len;		/* Name length */
 	uint8	file_type;
 	char	name[EXT2_NAME_LEN];	/* File name */
+};
+
+struct s_file_handle{
+    uint32 f_inode;
+    uint32 f_size;
+	uint32 f_blocks_count;
 };

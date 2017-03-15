@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <string.h>*/
 
-struct fuse_operations sfs_oper;
+struct fuse_operations nxfs_oper;
 
 /*int findStringPos(char buffer[], char searched[]){
 	int size_of_buffer = strlen(buffer);
@@ -86,32 +86,42 @@ void parseBackUps(){
 int main(int argc, char *argv[]) {
 	int i, fuse_stat;
 
-	sfs_oper.getattr = sfs_getattr;
-	/*sfs_oper.readlink = sfs_readlink;
-	sfs_oper.getdir = NULL;
-	sfs_oper.mknod = sfs_mknod;
-	sfs_oper.mkdir = sfs_mkdir;
-	sfs_oper.unlink = sfs_unlink;
-	sfs_oper.rmdir = sfs_rmdir;
-	sfs_oper.symlink = sfs_symlink;
-	sfs_oper.rename = sfs_rename;
-	sfs_oper.link = sfs_link;
-	sfs_oper.chmod = sfs_chmod;
-	sfs_oper.chown = sfs_chown;
-	sfs_oper.truncate = sfs_truncate;
-	sfs_oper.utime = sfs_utime;*/
-	sfs_oper.open = sfs_open;
-	sfs_oper.read = sfs_read;
-	/*sfs_oper.write = sfs_write;
-	sfs_oper.statfs = sfs_statfs;
-	sfs_oper.flush = sfs_flush;
-	sfs_oper.release = sfs_release;
-	sfs_oper.fsync = sfs_fsync;*/
-	sfs_oper.opendir = sfs_opendir;
-	sfs_oper.readdir = sfs_readdir;
-	/*sfs_oper.releasedir = sfs_releasedir;
-	sfs_oper.fsyncdir = sfs_fsyncdir;*/
-	sfs_oper.init = sfs_init;
+	nxfs_oper.getattr = nxfs_get_attr;
+	nxfs_oper.rmdir = nxfs_rmdir;
+	nxfs_oper.mkdir = nxfs_mkdir;
+	nxfs_oper.rename = nxfs_rename;
+	nxfs_oper.truncate = nxfs_truncate;
+	nxfs_oper.write = nxfs_write;
+	nxfs_oper.release = nxfs_release;
+	nxfs_oper.releasedir = nxfs_releasedir;
+	nxfs_oper.unlink = nxfs_unlink;
+	nxfs_oper.mknod = nxfs_mknod;
+	nxfs_oper.create = nxfs_create;
+	/*nxfs_oper.readlink = nxfs_readlink;
+	nxfs_oper.getdir = NULL;
+	
+	
+	
+	nxfs_oper.symlink = nxfs_symlink;
+	
+	nxfs_oper.link = nxfs_link;
+	nxfs_oper.chmod = nxfs_chmod;
+	nxfs_oper.chown = nxfs_chown;
+	
+	nxfs_oper.utime = nxfs_utime;*/
+	nxfs_oper.open = nxfs_open;
+	nxfs_oper.read = nxfs_read;
+	nxfs_oper.statfs = nxfs_statfs;
+	/*
+	nxfs_oper.flush = nxfs_flush;
+	
+	nxfs_oper.fsync = nxfs_fsync;*/
+	nxfs_oper.opendir = nxfs_opendir;
+	nxfs_oper.readdir = nxfs_read_dir;
+	/*
+	nxfs_oper.fsyncdir = nxfs_fsyncdir;*/
+	nxfs_oper.init = nxfs_init;
+	// nxfs_oper.create = nxfs_creat;
 
 	printf("mounting file system...\n");
 	for(i = 1; i < argc && (argv[i][0] == '-'); i++) {
@@ -134,7 +144,7 @@ int main(int argc, char *argv[]) {
 	argc--;
 	//printf("llego aqui\n");
 
-	fuse_stat = fuse_main(argc, argv, &sfs_oper, NULL);
+	fuse_stat = fuse_main(argc, argv, &nxfs_oper, NULL);
 
 	printf("fuse_main returned %d\n", fuse_stat);
 

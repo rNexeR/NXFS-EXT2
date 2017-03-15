@@ -1,6 +1,0 @@
-  Primary superblock at 1, Group descriptors at 2-2
-  Backup superblock at 8193, Group descriptors at 8194-8194
-  Backup superblock at 24577, Group descriptors at 24578-24578
-  Backup superblock at 40961, Group descriptors at 40962-40962
-  Backup superblock at 57345, Group descriptors at 57346-57346
-  Backup superblock at 73729, Group descriptors at 73730-73730

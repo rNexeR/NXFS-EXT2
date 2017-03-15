@@ -10,7 +10,7 @@ clean:
 bin: 
 	mkdir -p bin
 
-bin/nxt2fs: bin obj/nxt2fs.o obj/bitmap.o obj/inodes.o obj/device.o obj/main.o
+bin/nxt2fs: bin obj/nxt2fs.o obj/bitmap.o obj/inodes.o obj/device.o obj/main.o obj/utils.o
 	g++ -g -o bin/nxt2fs obj/* $(LINKFLAGS)
 
 obj:
@@ -19,7 +19,7 @@ obj:
 obj/main.o: obj main.c nxt2fs.h
 	gcc -g $(CFLAGS) -c main.c -o $@
 
-obj/nxt2fs.o: obj nxt2fs.c nxt2fs.h
+obj/nxt2fs.o: obj nxt2fs.c nxt2fs.h utils.h
 	g++ -g $(CFLAGS) -c nxt2fs.c -o $@
 
 obj/inodes.o: obj inodes.c inodes.h
@@ -31,3 +31,5 @@ obj/bitmap.o: obj bitmap.c bitmap.h
 obj/device.o: obj device.c device.h inodes.h bitmap.h
 	g++ -g $(CFLAGS) -c device.c -o $@
 
+obj/utils.o: obj utils.c utils.h
+	g++ -g $(CFLAGS) -c utils.c -o $@
