@@ -861,6 +861,55 @@ int save_inode(struct s_inode inode, uint32 index){
   return device_write(inode_buff, es.s_inode_size);
 }
 
+int save_meta_data(){
+  //saving in group 0
+  device_seek(1024);
+  device_write(&es, sizeof(struct s_superblock));
+
+  uint32 offset_group_descriptor = size_of_block;
+  uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor)*number_of_groups;
+  if (size_of_block == 1024)
+      offset_group_descriptor += 1024;
+  //saveing group descriptor 0
+  device_seek(offset_group_descriptor);
+  device_write(&groups_table, size_of_group_descriptor);
+  //saving in group 1
+  uint32 offset = (1 * es.s_blocks_per_group)*size_of_block;
+  device_seek(offset);
+  device_write(&es, sizeof(struct s_superblock));
+  //saveing group descriptor 1
+  device_seek(offset+size_of_block);
+  device_write(&groups_table, size_of_group_descriptor);
+  //saving in power of 3
+  for(int i =3; i< number_of_groups;i*3){
+    offset = (i * es.s_blocks_per_group)*size_of_block;
+    device_seek(offset);
+    device_write(&es, sizeof(s_superblock));
+    device_seek(offset+size_of_block);
+    device_write(&groups_table, size_of_group_descriptor);
+  }
+
+  //saving in power of 5
+  for(int i =5; i< number_of_groups;i*5){
+    offset = (i * es.s_blocks_per_group)*size_of_block;
+    device_seek(offset);
+    device_write(&es, sizeof(s_superblock));
+    device_seek(offset+size_of_block);
+    device_write(&groups_table, size_of_group_descriptor);
+  }
+
+  //saving in power of 7
+  for(int i =7; i< number_of_groups;i*7){
+    offset = (i * es.s_blocks_per_group)*size_of_block;
+    device_seek(offset);
+    device_write(&es, sizeof(s_superblock));
+    device_seek(offset+size_of_block);
+    device_write(&groups_table, size_of_group_descriptor);
+  }
+
+  return 0;
+}
+
 int nxfs_truncate(const char *path, off_t newSize)
 {
     printf("truncate %s newsize %lu\n", path, newSize);

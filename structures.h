@@ -14,14 +14,14 @@ struct s_superblock{
 	uint32 s_free_inodes_count;
 	uint32 s_first_data_block;
 	uint32 s_log_block_size;
-	uint32 s_log_frag_size;
+	int s_log_frag_size;
 	uint32 s_blocks_per_group;
 	uint32 s_flags_per_group;
 	uint32 s_inodes_per_group;
 	uint32 s_mtime;
 	uint32 s_wtime;
 	uint16 s_mnt_count;
-	uint16 s_max_mnt_count;
+	short int s_max_mnt_count;
 	uint16 s_magic;
 	uint16 s_state;
 	uint16 s_errors;
@@ -39,6 +39,8 @@ struct s_superblock{
 	uint32 s_feature_incompat;
 	uint32 s_feature_ro_compat;
 	uint16 s_uuid;
+	uint16 s_pad;
+	uint32 s_reserved[229];
 };
 
 struct s_block_group_descriptor{
