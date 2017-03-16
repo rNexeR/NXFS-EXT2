@@ -65,13 +65,14 @@ int read_sb()
     d_indirect_blocks_count = indirect_blocks_count * indirect_blocks_count;
     t_indirect_blocks_count = d_indirect_blocks_count * indirect_blocks_count;
 
+    n_512k_blocks_per_block = size_of_block / 512;
+
     return es.s_magic == 61267 ? 0 : -1;
 }
 
 //READ INODE BLOCKS
 void read_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_position)
 {
-
     uint32 t_indirect_blocks[size_of_block / sizeof(uint32)];
     read_block(t_indirect_blocks, t_indirect_block, size_of_block);
 
@@ -122,6 +123,121 @@ void read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_blo
         else
             read_indirect_block(buffer, inode.i_indirect, logic_block_number);
     }
+}
+
+void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_position, uint32 inode_number){
+    uint32 t_indirect_blocks[size_of_block / sizeof(uint32)];
+    read_block(t_indirect_blocks, t_indirect_block, size_of_block);
+
+    uint32 position = logic_position / (size_of_block / sizeof(uint32));
+    uint32 offset = logic_position - position * d_indirect_blocks_count;
+
+    printf("reading t_indirect block number: %lu logic pos %lu position %lu offset %lu\n", t_indirect_blocks[position], logic_position, position, offset);
+
+    if (t_indirect_blocks[logic_position] == 0)
+    {
+        int group, index;
+        locate(inode_number, es.s_inodes_per_group, &group, &index);
+        int new_block = get_free_block(group);
+        if(new_block < 0){
+            printf("Error getting new block\n");
+            return;
+        }
+
+        t_indirect_blocks[logic_position] = new_block;
+        write_block(t_indirect_blocks, t_indirect_block, size_of_block);
+        inode_bitmap_set(new_block, 1);
+    }
+
+    write_d_indirect_block(buffer, t_indirect_blocks[position], offset, inode_number);
+}
+
+void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_position, uint32 inode_number){
+    uint32 d_indirect_blocks[size_of_block / sizeof(uint32)];
+    read_block(d_indirect_blocks, d_indirect_block, size_of_block);
+
+    uint32 position = logic_position / (size_of_block / sizeof(uint32));
+    uint32 offset = logic_position - position * indirect_blocks_count;
+    printf("reading d_indirect block number: %lu logic pos %lu position %lu offset %lu\n", d_indirect_blocks[position], logic_position, position, offset);
+
+    if (d_indirect_blocks[logic_position] == 0)
+    {
+        int group, index;
+        locate(inode_number, es.s_inodes_per_group, &group, &index);
+        int new_block = get_free_block(group);
+        if(new_block < 0){
+            printf("Error getting new block\n");
+            return;
+        }
+
+        d_indirect_blocks[logic_position] = new_block;
+        write_block(d_indirect_blocks, d_indirect_block, size_of_block);
+        inode_bitmap_set(new_block, 1);
+    }
+
+    write_indirect_block(buffer, d_indirect_blocks[position], offset, inode_number);
+}
+
+void write_indirect_block(void *buffer, uint32 indirect_block, uint32 logic_position, uint32 inode_number){
+    uint32 indirect_blocks[size_of_block / sizeof(uint32)];
+    read_block(indirect_blocks, indirect_block, size_of_block);
+    printf("reading indirect block number: %lu logic position %lu\n", indirect_blocks[logic_position], logic_position);
+    if (indirect_blocks[logic_position] == 0)
+    {
+        int group, index;
+        locate(inode_number, es.s_inodes_per_group, &group, &index);
+        int new_block = get_free_block(group);
+        if(new_block < 0){
+            printf("Error getting new block\n");
+            return;
+        }
+
+        indirect_blocks[logic_position] = new_block;
+        write_block(indirect_blocks, indirect_block, size_of_block);
+        inode_bitmap_set(new_block, 1);
+    }
+    write_block(buffer, indirect_blocks[logic_position], size_of_block);
+}
+
+void write_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_block_number, uint32 inode_number){
+    int group, index;
+    locate(inode_number, es.s_inodes_per_group, &group, &index);
+    int new_block = get_free_block(group);
+    if(new_block < 0){
+        printf("Error getting new block\n");
+        return;
+    }
+
+    if (logic_block_number < EXT2_NDIR_BLOCKS){
+        if(inode.i_direct[logic_block_number] == 0){
+            inode.i_direct[logic_block_number] = new_block;
+            inode_bitmap_set(new_block, 1);
+        }
+        write_block(buffer, inode.i_direct[logic_block_number], size_of_block);
+    }else
+    {
+        logic_block_number -= EXT2_NDIR_BLOCKS;
+        if (logic_block_number >= d_indirect_blocks_count){
+            if(inode.i_indirect == 0){
+                inode.i_indirect = new_block;
+                inode_bitmap_set(new_block, 1);
+            }
+            write_t_indirect_block(buffer, inode.i_t_indirect, logic_block_number - d_indirect_blocks_count, inode_number);
+        }else if (logic_block_number >= indirect_blocks_count){
+            if(inode.i_d_indirect == 0){
+                inode.i_d_indirect = new_block;
+                inode_bitmap_set(new_block, 1);
+            }
+            write_d_indirect_block(buffer, inode.i_d_indirect, logic_block_number - indirect_blocks_count, inode_number);
+        }else{
+            if(inode.i_t_indirect == 0){
+                inode.i_t_indirect = new_block;
+                inode_bitmap_set(new_block, 1);
+            }
+            write_indirect_block(buffer, inode.i_indirect, logic_block_number, inode_number);
+        }
+    }
+    //save_inode
 }
 
 //BITMAPS
@@ -213,21 +329,19 @@ int get_free_block_in_group(uint32 group_number){
 }
 
 int get_free_inode(uint32 group_number){
-    int new_inode = get_free_inode_in_group(group_number);
-    int inode_group_offset = 1;
-    while(new_inode < 0 && group_number + (inode_group_offset) <= number_of_groups){
-        new_inode = get_free_inode_in_group(group_number + (inode_group_offset++));
+    int new_inode = get_free_inode_in_group(group_number++);
+    while(new_inode < 0 && group_number <= number_of_groups){
+        new_inode = get_free_inode_in_group(group_number++);
     }
-    return new_inode;
+    return new_inode >= 0 ? (group_number -1)*es.s_inodes_per_group + new_inode : new_inode;
 }
 
 int get_free_block(uint32 group_number){
-    int new_block = get_free_block_in_group(group_number);
-    int block_group_offset = 1;
-    while(new_block < 0 && group_number + (block_group_offset) <= number_of_groups){
-        new_block = get_free_inode_in_group(group_number + (block_group_offset++));
+    int new_block = get_free_block_in_group(group_number++);
+    while(new_block < 0 && group_number <= number_of_groups){
+        new_block = get_free_inode_in_group(group_number++);
     }
-    return new_block;
+    return new_block >= 0 ? (group_number -1)*es.s_blocks_per_group + new_block : new_block;;
 }
 
 //ENTRIES
@@ -424,14 +538,11 @@ void test()
 		result = bitmapGet(buffer, i);
 		if(print_info)
 			printf("Inode[%d]: %d\n", i, result);
-	}
-
-	if(print_info){
-		printf("next available: %d\n", get_free_group_inode(0));
-		printf("sizeof(s_inode): %lu\n", sizeof(s_inode));
-
-		printf("\tRoot Inode\n");
 	}*/
+
+	// if(print_info)
+		printf("next inode available: %d\n", get_free_inode(1));
+
     uint32 indirect_blocks = size_of_block / sizeof(uint32);
     uint32 d_indirect_blocks = indirect_blocks * indirect_blocks;
     uint32 t_indirect_blocks = d_indirect_blocks * indirect_blocks;
@@ -553,7 +664,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
     // read_block(block, dir_inode.i_direct[0], size_of_block);
     read_inode_logic_block(block, *dir_inode, current_block++);
 
-    uint16 c_size = 0;
+    uint32 c_size = 0;
 
     entry = (struct s_dir_entry2 *)block; /* first entry in the directory */
 
@@ -831,7 +942,8 @@ int nxfs_mkdir(const char *path, mode_t mode)
     struct s_dir_entry2 new_entry;
     new_entry.inode = new_inode;
     new_entry.rec_len = size_of_block;
-    // new_entry
+    new_entry.name_len = dir_name_len + 2;
+    new_entry.file_type = ENTRY_DIR;
 
     if(parent_last_entry->offset % size_of_block >= ENTRY_BASE_SIZE + dir_name_len + 1){
         char buffer[size_of_block];
@@ -839,6 +951,11 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
         uint32 new_rec_len = ENTRY_BASE_SIZE + parent_last_entry->name_len + 2;
         memcpy(&buffer[parent_last_entry->offset + ENTRY_BASE_SIZE],  &new_rec_len, sizeof(uint32));
+
+        new_entry.rec_len = size_of_block - (parent_last_entry->offset + new_rec_len);
+
+        memcpy(&buffer[parent_last_entry->offset + new_rec_len], &new_entry, ENTRY_BASE_SIZE);
+        strncpy(&buffer[parent_last_entry->offset + new_rec_len + ENTRY_BASE_SIZE], dir_name, new_entry.name_len);
 
 
     }else{

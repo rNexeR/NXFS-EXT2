@@ -26,7 +26,7 @@ extern "C" {
 #define ENTRY_FILE 1
 #define ENTRY_BASE_SIZE 64
 
-static const int print_info = 1;
+static const int print_info = 0;
 
 static struct s_superblock es;
 static struct s_block_group_descriptor *groups_table;
@@ -34,6 +34,7 @@ static struct s_block_group_descriptor *groups_table;
 static uint32 size_of_block;
 static uint32 size_of_fragment;
 static uint32 number_of_groups;
+static uint32 n_512k_blocks_per_block;
 
 static uint32 indirect_blocks_count;
 static uint32 d_indirect_blocks_count;
@@ -58,8 +59,15 @@ void read_d_indirect_block(void *, uint32, uint32);
 void read_indirect_block(void *buffer, uint32, uint32 logic_position);
 void read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_block_number);
 
+void write_t_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
+void write_d_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
+void write_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
+void write_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_block_number, uint32 inode_number);
+
 void read_block_bitmap(void *buffer, int group_number);
 void read_inode_bitmap(void *buffer, int group_number);
+void inode_bitmap_set(uint32 inode_number, uint8 state);
+void block_bitmat_set(uint32 inode_number, uint8 state);
 
 int nxfs_get_attr(const char *path, struct stat *statbuf);
 uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
