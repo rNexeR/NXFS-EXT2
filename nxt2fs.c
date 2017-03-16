@@ -290,7 +290,7 @@ struct s_inode* read_inode(uint32 inode_number)
     struct s_inode* inode = (struct s_inode*) malloc(sizeof(struct s_inode));
     char inode_buff[es.s_inode_size];
     int offset = es.s_inode_size * inode_index;
-    int base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
+    uint32 base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
 
     device_seek(base_pointer + offset);
     device_read(inode_buff, es.s_inode_size);
@@ -964,6 +964,18 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
 
     return 0;
+}
+
+int save_inode(struct s_inode inode, uint32 index){
+  int inode_group, inode_index;
+  locate(index, es.s_inodes_per_group, &inode_group, &inode_index);
+  char inode_buff[es.s_inode_size];
+  memcpy(inode_buff,(void *)&inode, es.s_inode_size);
+  int offset = es.s_inode_size * inode_index;
+  uint32 base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
+
+  device_seek(base_pointer + offset);
+  return device_write(inode_buff, es.s_inode_size);
 }
 
 int nxfs_truncate(const char *path, off_t newSize)

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-bin/nxt2fs $1 device -f -s
+bin/nxt2fs $1 $2 -f -s
