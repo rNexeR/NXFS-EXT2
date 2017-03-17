@@ -13,7 +13,9 @@ int write_block(void* buffer, uint32 block_number, uint32 size_of_block) {
 }
 
 int device_write(void *buffer, uint32 size){
-  return ( fwrite(buffer, 1, size, f) == size );
+  int siz = fwrite(buffer, 1, size, f);
+  printf("size %d\n", siz);
+  return ( siz == size );
 }
 
 int device_read(void* buffer, uint32 size){
@@ -22,6 +24,9 @@ int device_read(void* buffer, uint32 size){
 
 void device_seek(uint32 offset){
   fseek(f, offset, SEEK_SET);
+  uint32 cur_pos = ftell(f);
+  if(offset != cur_pos)
+    printf("-------> |||||||||||||||||||||| <------------------");
 }
 
 struct stat device_stat(){

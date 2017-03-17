@@ -45,13 +45,13 @@ void bitmapReset(byte *bitmap, int pos) {
     reset(&bitmap[pos/BIT], pos%BIT);
 }
 
-int bitmapSearch(byte *bitmap, int n, int size, int start) {
-    int i;
-    for(i = start+1, size *= BIT; i < size; i++)
-        if(bitmapGet(bitmap,i) == n)
-            return i;
-    return BITMAP_NOTFOUND;
-}
+// int bitmapSearch(byte *bitmap, int n, int size, int start) {
+//     int i;
+//     for(i = start+1, size *= BIT; i < size; i++)
+//         if(bitmapGet(bitmap,i) == n)
+//             return i;
+//     return BITMAP_NOTFOUND;
+// }
 
 static int get(byte a, byte pos) {
     return (a >> pos) & 1;
