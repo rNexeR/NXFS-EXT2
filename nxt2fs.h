@@ -24,7 +24,7 @@ extern "C" {
 #define ROOT_INO 2
 #define ENTRY_DIR 2
 #define ENTRY_FILE 1
-#define ENTRY_BASE_SIZE 64
+#define ENTRY_BASE_SIZE 8
 
 static const int print_info = 0;
 
@@ -57,7 +57,7 @@ int get_free_block(uint32);
 void read_t_indirect_block(void *, uint32, uint32);
 void read_d_indirect_block(void *, uint32, uint32);
 void read_indirect_block(void *buffer, uint32, uint32 logic_position);
-void read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_block_number);
+int read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_block_number);
 
 void write_t_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
 void write_d_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
@@ -67,7 +67,7 @@ void write_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_bl
 void read_block_bitmap(void *buffer, int group_number);
 void read_inode_bitmap(void *buffer, int group_number);
 void inode_bitmap_set(uint32 inode_number, uint8 state);
-void block_bitmat_set(uint32 inode_number, uint8 state);
+void block_bitmap_set(uint32 inode_number, uint8 state);
 
 int nxfs_get_attr(const char *path, struct stat *statbuf);
 uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
@@ -75,6 +75,7 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
 struct s_dir_entry2* find_last_entry(struct s_inode inode);
 struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name);
 struct s_dir_entry2 find_previous_entry(struct s_inode inode, char *entry_name);
+int add_entry(struct s_inode parent_inode, uint32 parent_inode_number, char *entry_name, mode_t mode, uint8 file_type);
 
 void nxfs_stat_entry(const char *path, struct stat *statbuf);
 int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo);
