@@ -6,7 +6,7 @@ void read_group_descriptors()
     // struct stat fileStat = device_stat();
 
     // number_of_groups = fileStat.st_size / (es.s_blocks_per_group * size_of_block) + 1;
-    number_of_groups = es.s_blocks_count / es.s_blocks_per_group;
+    number_of_groups = 1 + (es.s_blocks_count-1) / es.s_blocks_per_group;
     if (print_info)
     {
         printf("Number of groups: %d\n", number_of_groups);
@@ -443,6 +443,7 @@ void test()
     printf("Indirect blocks %lu\n", indirect_blocks_count);
     printf("D_Indirect blocks %lu\n", d_indirect_blocks_count);
     printf("T_Indirect blocks %lu\n", t_indirect_blocks_count);
+    // nxfs_truncate("/helloworld.asm",0);
 
     // struct s_inode* inode;
     // inode = read_inode(ROOT_INO);
@@ -852,67 +853,228 @@ int nxfs_mkdir(const char *path, mode_t mode)
 int save_inode(struct s_inode inode, uint32 index){
   int inode_group, inode_index;
   locate(index, es.s_inodes_per_group, &inode_group, &inode_index);
-  char inode_buff[es.s_inode_size];
-  memcpy(inode_buff,(void *)&inode, es.s_inode_size);
+  // char inode_buff[es.s_inode_size];
+  // memcpy(inode_buff,(void *)&inode, es.s_inode_size);
   int offset = es.s_inode_size * inode_index;
   uint32 base_pointer = groups_table[inode_group].bg_inode_table * size_of_block;
 
   device_seek(base_pointer + offset);
-  return device_write(inode_buff, es.s_inode_size);
+  return device_write(&inode, es.s_inode_size);
 }
 
 int save_meta_data(){
   //saving in group 0
   device_seek(1024);
-  device_write(&es, sizeof(struct s_superblock));
+  device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
+  printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 0, 1024, 0);
 
   uint32 offset_group_descriptor = size_of_block;
   uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor)*number_of_groups;
-  if (size_of_block == 1024)
-      offset_group_descriptor += 1024;
+
   //saveing group descriptor 0
-  device_seek(offset_group_descriptor);
+  device_seek(1024+size_of_block+offset_group_descriptor);
   device_write(&groups_table, size_of_group_descriptor);
+  printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 0, 1024+size_of_block+offset_group_descriptor, 1);
+  
   //saving in group 1
   uint32 offset = (1 * es.s_blocks_per_group)*size_of_block;
-  device_seek(offset);
-  device_write(&es, sizeof(struct s_superblock));
+  device_seek(1024+offset);
+  device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
+  printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 1, 1024+offset,es.s_blocks_per_group);
   //saveing group descriptor 1
-  device_seek(offset+size_of_block);
+  device_seek(1024+offset+size_of_block);
   device_write(&groups_table, size_of_group_descriptor);
+  printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 1, 1024+offset+size_of_block,es.s_blocks_per_group+1);
   //saving in power of 3
-  for(int i =3; i< number_of_groups;i*3){
-    offset = (i * es.s_blocks_per_group)*size_of_block;
-    device_seek(offset);
-    device_write(&es, sizeof(s_superblock));
-    device_seek(offset+size_of_block);
+  for(int i =3; i< number_of_groups;i*=3){
+    uint32 block = (i * es.s_blocks_per_group);
+    offset = block*size_of_block;
+    device_seek(1024+offset);
+    device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
+    printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset,block);
+    device_seek(1024+offset+size_of_block);
     device_write(&groups_table, size_of_group_descriptor);
+    printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset+size_of_block,block+1);
   }
 
   //saving in power of 5
-  for(int i =5; i< number_of_groups;i*5){
-    offset = (i * es.s_blocks_per_group)*size_of_block;
-    device_seek(offset);
-    device_write(&es, sizeof(s_superblock));
-    device_seek(offset+size_of_block);
+  for(int i =5; i< number_of_groups;i*=5){
+    uint32 block = (i * es.s_blocks_per_group);
+    offset = block*size_of_block;    device_seek(1024+offset);
+    device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
+    printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset,block);
+    device_seek(1024+offset+size_of_block);
     device_write(&groups_table, size_of_group_descriptor);
+    printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset+size_of_block,block+1);
   }
 
   //saving in power of 7
-  for(int i =7; i< number_of_groups;i*7){
-    offset = (i * es.s_blocks_per_group)*size_of_block;
-    device_seek(offset);
-    device_write(&es, sizeof(s_superblock));
-    device_seek(offset+size_of_block);
+  for(int i =7; i< number_of_groups;i*=7){
+    uint32 block = (i * es.s_blocks_per_group);
+    offset = block*size_of_block;
+    device_seek(1024+offset);
+    device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
+    printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset,block);
+    device_seek(1024+offset+size_of_block);
     device_write(&groups_table, size_of_group_descriptor);
+    printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset+size_of_block,block+1);
   }
 
   return 0;
 }
 
+void free_i_logic_block(uint32 i_indirect_block,uint32 logic_position){
+    uint32 i_indirect_blocks[size_of_block / sizeof(uint32)];
+    read_block(i_indirect_blocks, i_indirect_block, size_of_block);
+
+    if (i_indirect_blocks[logic_position]!=0)
+    {
+        printf("free data Block: %d\n", i_indirect_blocks[logic_position]);
+        block_bitmat_set(i_indirect_blocks[logic_position],0);
+    }
+}
+
+void free_d_logic_block(uint32 d_indirect_block,uint32 logic_position){
+    uint32 d_indirect_blocks[size_of_block / sizeof(uint32)];
+    read_block(d_indirect_blocks, d_indirect_block, size_of_block);
+
+    uint32 position = logic_position / (size_of_block / sizeof(uint32));
+    uint32 offset = logic_position - position * d_indirect_blocks_count;
+
+    free_i_logic_block(d_indirect_blocks[position], offset);
+}
+
+void free_t_logic_block(uint32 t_indirect_block,uint32 logic_position){
+    uint32 t_indirect_blocks[size_of_block / sizeof(uint32)];
+    read_block(t_indirect_blocks, t_indirect_block, size_of_block);
+
+    uint32 position = logic_position / (size_of_block / sizeof(uint32));
+    uint32 offset = logic_position - position * d_indirect_blocks_count;
+
+    free_d_logic_block(t_indirect_blocks[position], offset);
+}
+
+void free_logic_block(struct s_inode *child_inode, uint32 logic_block_number){
+    if (logic_block_number < EXT2_NDIR_BLOCKS){
+        uint32 physical_data_block = child_inode->i_direct[logic_block_number];
+        if (physical_data_block!=0)
+        {
+            printf("free data Block: %d\n", physical_data_block);
+            block_bitmat_set(physical_data_block,0);
+            child_inode->i_direct[logic_block_number] = 0;
+        }
+    }
+    else
+    {
+        logic_block_number -= EXT2_NDIR_BLOCKS;
+        if (logic_block_number >= d_indirect_blocks_count)
+            free_t_logic_block(child_inode->i_t_indirect,logic_block_number - d_indirect_blocks_count);
+        else if (logic_block_number >= indirect_blocks_count)
+            free_d_logic_block(child_inode->i_d_indirect,logic_block_number - indirect_blocks_count);
+        else
+            free_i_logic_block(child_inode->i_indirect,logic_block_number);
+    }
+}
+
+void free_indirect_blocks(struct s_inode *child_inode){
+    if(child_inode->i_indirect!=0)
+        block_bitmat_set(child_inode->i_indirect,0);
+
+    uint32 cant_indirects = size_of_block/sizeof(uint32);
+    uint32 d_indirect_blocks[cant_indirects];
+    if(child_inode->i_d_indirect!=0){
+        read_block(d_indirect_blocks, child_inode->i_d_indirect, size_of_block);
+
+        for (int i = 0; i < cant_indirects; ++i){
+            if (d_indirect_blocks[i]!=0){
+                printf("free indirect Block: %d\n",d_indirect_blocks[i]);
+                block_bitmat_set(d_indirect_blocks[i],0);
+            }
+        }
+
+        printf("free d indirect Block: %d\n",child_inode->i_d_indirect);
+        block_bitmat_set(child_inode->i_d_indirect,0);
+    }
+
+    if(child_inode->i_t_indirect!=0){
+        uint32 t_indirect_blocks[cant_indirects];
+        read_block(t_indirect_blocks,child_inode->i_t_indirect,size_of_block);
+
+        for (int i = 0; i < cant_indirects; ++i)
+        {
+            if (t_indirect_blocks[i]!=0)
+            {
+                read_block(d_indirect_blocks,t_indirect_blocks[i],size_of_block);
+                for (int j = 0; j < cant_indirects; ++j)
+                {
+                    if (d_indirect_blocks[j]!=0)
+                    {
+                        printf("free indirect Block: %d\n",d_indirect_blocks[j]);
+                        block_bitmat_set(d_indirect_blocks[j],0);
+                    }
+                }
+                
+                printf("free d indirect Block: %d\n",t_indirect_blocks[i]);
+                block_bitmat_set(t_indirect_blocks[i],0);
+            }
+        }
+        printf("free t indirect Block: %d\n",child_inode->i_t_indirect);
+        block_bitmat_set(child_inode->i_t_indirect,0);
+    }
+}
+
 int nxfs_truncate(const char *path, off_t newSize)
 {
-    printf("truncate %s newsize %lu\n", path, newSize);
+    char* path_child = (char*)malloc(strlen(path)+1);
+    bzero(path_child,strlen(path)+1);
+    memcpy(path_child,path,strlen(path));
+    printf("truncate %s newsize %lu\n", path_child, newSize);
+
+    uint32 inode_index = lookup_entry_inode(path_child,ROOT_INO);
+    printf("inode_index: %d\n", inode_index);
+    struct s_inode *child_inode = read_inode(inode_index);
+
+    printf("Llego hasta aqui\n");
+
+    if (child_inode->i_size == newSize)
+        return 0;
+
+    if (child_inode->i_size<newSize)
+        return -ENOENT;
+
+    if (inode_index<11)
+    {
+        printf("inode not found \n");
+        return -ENOENT;
+    }
+
+    printf("Llego hasta aqui 2\n");
+    uint32 inode_blocks = child_inode->i_size/size_of_block;
+    if (inode_blocks*size_of_block < child_inode->i_size)
+        inode_blocks+=1;
+    uint32 new_block_size = newSize/size_of_block;
+    printf("inode_blocks: %d\n",inode_blocks);
+
+    if (newSize == 0)
+    {
+        for (uint32 i = 0; i < inode_blocks; ++i)
+            free_logic_block(child_inode,i);
+
+        printf("free data blocks\n");
+        free_indirect_blocks(child_inode);
+        printf("free indirect blocks\n");
+
+        child_inode->i_indirect = 0;
+        child_inode->i_d_indirect = 0;
+        child_inode->i_t_indirect = 0;
+        child_inode->i_size = 0;
+    }
+
+    save_inode(*child_inode,inode_index);
+    printf("Saved inode\n");
+    save_meta_data();
+    printf("Saved meta data\n");
+    free(path_child);
     return 0;
 }
 
