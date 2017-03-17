@@ -279,19 +279,20 @@ void read_inode_bitmap(void *buffer, int group_number)
     read_block(buffer, block_number, size_of_block);
 }
 
-void inode_bitmap_set(uint32 inode_number, uint8 state)
+void inode_bitmap_set(int inode_number, uint8 state)
 {
     int inode_group, inode_index;
     locate(inode_number, es.s_inodes_per_group, &inode_group, &inode_index);
-    printf("Seting bitmap of g: %d \n", inode_group);
+    inode_index++;
+    // printf("Seting bitmap of g: %d \n", inode_group);
     byte buffer[size_of_block];
     read_inode_bitmap(buffer, inode_group);
     if (state)
     {
-        printf("before bitmap set %d\n", bitmapGet(buffer, inode_index));
-        printf("set as used pos %lu\n", inode_number);
+        // printf("before bitmap set %d\n", bitmapGet(buffer, inode_index));
+        // printf("set as used pos %lu\n", inode_number);
         bitmapSet(buffer, inode_index);
-        printf("after bitmap set %d\n", bitmapGet(buffer, inode_index));
+        // printf("after bitmap set %d\n", bitmapGet(buffer, inode_index));
     }
     else
         bitmapReset(buffer, inode_index);
@@ -307,24 +308,26 @@ void inode_bitmap_set(uint32 inode_number, uint8 state)
         groups_table[inode_group].bg_free_inodes_count++;
     }
 
-    printf("size_of_block %lu\n", size_of_block);
-    printf("inode bitmap at %lu\n", groups_table[inode_group].bg_inode_bitmap);
-    uint32 base = groups_table[inode_group].bg_inode_bitmap * size_of_block;
-    printf("base %lu\n", base);
-    device_seek(base);
-    if (device_write(buffer, size_of_block))
-        printf("Guardo...\n");
-    else
-        printf("Error...\n");
-    // write_block(buffer, groups_table[inode_group].bg_inode_bitmap, size_of_block);
+    // printf("size_of_block %lu\n", size_of_block);
+    // printf("inode bitmap at %lu\n", groups_table[inode_group].bg_inode_bitmap);
+    // uint32 base = groups_table[inode_group].bg_inode_bitmap * size_of_block;
+    // printf("base %lu\n", base);
+    // device_seek(base);
+    // if (device_write(buffer, size_of_block))
+    //     printf("Guardo...\n");
+    // else
+    //     printf("Error...\n");
+    printf("write inode bitmap\n");
+    write_block(buffer, groups_table[inode_group].bg_inode_bitmap, size_of_block);
     device_flush();
-    printf("new available inode after set %d\n", get_free_inode(inode_group));
+    // printf("new available inode after set %d\n", get_free_inode(inode_group));
 }
 
 void block_bitmap_set(uint32 inode_number, uint8 state)
 {
     int block_group, block_index;
     locate(inode_number, es.s_blocks_per_group, &block_group, &block_index);
+    block_index++;
 
     byte buffer[size_of_block];
     read_inode_bitmap(buffer, block_group);
@@ -388,10 +391,12 @@ int get_free_inode_in_group(uint32 group_number)
     read_inode_bitmap(buffer, group_number);
     int start = 0;
     if (group_number == 0)
-        start = 11;
+        start = 12;
+    int result;
     for (uint32 i = start; i < es.s_inodes_per_group; i++)
     {
-        if (!bitmapGet(buffer, i))
+        result = bitmapGet(buffer, i);
+        if(!result)
             return i;
     }
     return -1;
@@ -626,22 +631,22 @@ void test()
 {
 
     byte buffer[size_of_block];
-    read_inode_bitmap(buffer, 0);
+    // read_inode_bitmap(buffer, 0);
     int result;
-    for (uint32 i = 0; i < 20; i++)
-    // for (int i = 0; i < 10; i++)
-    {
-        // bitmapSet(buffer, i);
-        result = bitmapGet(buffer, i);
-        printf("Inode[%d]: %d\n", i, result);
-        bitmapSet(buffer, i);
-    }
+    // for (uint32 i = 0; i < 20; i++)
+    // // for (int i = 0; i < 10; i++)
+    // {
+    //     // bitmapSet(buffer, i);
+    //     result = bitmapGet(buffer, i);
+    //     printf("Inode[%d]: %d\n", i, result);
+    //     bitmapSet(buffer, i);
+    // }
 
-    write_block(buffer, groups_table[0].bg_inode_bitmap, size_of_block);
-    bzero(buffer, size_of_block);
+    // write_block(buffer, groups_table[0].bg_inode_bitmap, size_of_block);
+    // bzero(buffer, size_of_block);
 
     read_inode_bitmap(buffer, 0);
-    for (uint32 i = 0; i < 20; i++)
+    for (uint32 i = 0; i < 40; i++)
     // for (int i = 0; i < 10; i++)
     {
         // bitmapSet(buffer, i);
@@ -651,7 +656,7 @@ void test()
 
     // if(print_info)
     printf("next inode available: %d\n", get_free_inode(0));
-    printf("get bit of  inode : %d\n", get_free_inode(0));
+    // printf("get bit of  inode : %d\n", get_free_inode(0));
 
     uint32 indirect_blocks = size_of_block / sizeof(uint32);
     uint32 d_indirect_blocks = indirect_blocks * indirect_blocks;
@@ -797,7 +802,13 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
         file_name[entry->name_len] = 0; /* append null char to the file name */
 
         c_size += entry->rec_len;
-        if (print_info)
+        
+        if(entry->inode == 0){
+            printf("rd-> error reading block\n");
+            return -1;
+        }
+        
+        // if (print_info)
             printf("rd-> \t%u %s\n", entry->inode, file_name);
         // filler(buf, file_name, NULL, c_size - entry->rec_len);
         filler(buf, file_name, NULL, 0);
@@ -1023,6 +1034,7 @@ int nxfs_rmdir(const char *path)
 
 int nxfs_mkdir(const char *path, mode_t mode)
 {
+
     uint32 len = strlen(path);
     char parent[len];
     char dir_name[len];
@@ -1035,50 +1047,10 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
     uint32 parent_inode_number = lookup_entry_inode(parent, ROOT_INO);
     printf("Parent number %d\n", parent_inode_number);
-    // if(parent_inode_number == 0){
-    //     return -EPERM;
-    // }
-
-    // int parent_inode_group, parent_inode_index;
-    // locate(parent_inode_number, es.s_inodes_per_group, &parent_inode_group, &parent_inode_index);
-
-    // int new_inode = get_free_inode(parent_inode_group);
-    // if(new_inode < 0)
-    //     return -ENOENT;
-
-    // int new_inode_group, new_inode_index;
-    // locate(new_inode, es.s_blocks_per_group, &new_inode_group, &new_inode_index);
-
-    // int new_block = get_free_block(new_inode_group);
-    // if(new_block < 0)
-    //     return -ENOENT;
 
     struct s_inode *parent_inode = read_inode(parent_inode_number);
     int result = add_entry(*parent_inode, parent_inode_number, dir_name, mode, ENTRY_DIR);
     printf("result: %d\n", result);
-    // struct s_dir_entry2* parent_last_entry = find_last_entry(*parent_inode);
-
-    // struct s_dir_entry2 new_entry;
-    // new_entry.inode = new_inode;
-    // new_entry.rec_len = size_of_block;
-    // new_entry.name_len = dir_name_len + 2;
-    // new_entry.file_type = ENTRY_DIR;
-
-    // if(parent_last_entry->offset % size_of_block >= ENTRY_BASE_SIZE + dir_name_len + 1){
-    //     char buffer[size_of_block];
-    //     read_inode_logic_block(buffer, *parent_inode, parent_last_entry->block_number);
-
-    //     uint32 new_rec_len = ENTRY_BASE_SIZE + parent_last_entry->name_len + 2;
-    //     memcpy(&buffer[parent_last_entry->offset + ENTRY_BASE_SIZE],  &new_rec_len, sizeof(uint32));
-
-    //     new_entry.rec_len = size_of_block - (parent_last_entry->offset + new_rec_len);
-
-    //     memcpy(&buffer[parent_last_entry->offset + new_rec_len], &new_entry, ENTRY_BASE_SIZE);
-    //     strncpy(&buffer[parent_last_entry->offset + new_rec_len + ENTRY_BASE_SIZE], dir_name, new_entry.name_len);
-
-    // }else{
-    //     // ask for new block entries
-    // }
 
     return 0;
 }
@@ -1179,35 +1151,35 @@ int add_entry(struct s_inode parent_inode, uint32 parent_inode_number, char *ent
     entry_inode.i_blocks = n_512k_blocks_per_block;
     entry_inode.i_flags = 0;
     entry_inode.i_direct[0] = new_block;
+    save_inode(entry_inode, new_inode);
 
-    // char buffer[size_of_block];
-    bzero(buffer, size_of_block);
+    char buffer2[size_of_block];
 
     new_entry.inode = new_inode;
     new_entry.rec_len = 12;
     new_entry.name_len = 1;
+    new_entry.file_type = ENTRY_DIR;
     char new_entry_name[new_entry.rec_len - ENTRY_BASE_SIZE];
     bzero(new_entry_name, new_entry.rec_len - ENTRY_BASE_SIZE);
     strcpy(new_entry_name, ".");
 
-    memcpy(buffer, &new_entry, ENTRY_BASE_SIZE);
-    memcpy(buffer + ENTRY_BASE_SIZE, new_entry_name, new_entry.name_len);
+    memcpy(buffer2, &new_entry, ENTRY_BASE_SIZE);
+    memcpy(&buffer2[ENTRY_BASE_SIZE], new_entry_name, new_entry.name_len);
 
     new_entry.inode = parent_inode_number;
-    new_entry.rec_len = 12;
     new_entry.name_len = 2;
     bzero(new_entry_name, new_entry.rec_len - ENTRY_BASE_SIZE);
+    new_entry.rec_len = size_of_block - 12;
     strcpy(new_entry_name, "..");
 
-    memcpy(buffer + 12, &new_entry, ENTRY_BASE_SIZE);
-    memcpy(buffer + 12 + ENTRY_BASE_SIZE, new_entry_name, new_entry.name_len);
+    memcpy(&buffer2[12], &new_entry, ENTRY_BASE_SIZE);
+    memcpy(&buffer2[12 + ENTRY_BASE_SIZE], new_entry_name, new_entry.name_len);
 
-    // write_inode_logic_block(buffer, entry_inode, 0, new_inode);
-    write_block(buffer, new_block, size_of_block);
+    write_inode_logic_block(buffer2, entry_inode, 0, new_inode);
+    // write_block(buffer, new_block, size_of_block);
     device_flush();
 
     groups_table[new_inode_group].bg_used_dirs_count++;
-    save_inode(entry_inode, new_inode);
 
     return 0;
 }
