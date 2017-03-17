@@ -97,6 +97,7 @@ int nxfs_unlink(const char *path);
 int nxfs_mknod(const char *path, mode_t mode, dev_t dev);
 int nxfs_create(const char *, mode_t, struct fuse_file_info *);
 int save_inode(struct s_inode inode, uint32 index);
+int save_meta_data();
 #ifdef __cplusplus
 }
 #endif
