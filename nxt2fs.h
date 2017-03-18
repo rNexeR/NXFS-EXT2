@@ -66,7 +66,7 @@ void write_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_bl
 
 void read_block_bitmap(void *buffer, int group_number);
 void read_inode_bitmap(void *buffer, int group_number);
-void inode_bitmap_set(uint32 inode_number, uint8 state);
+void inode_bitmap_set(int inode_number, uint8 state);
 void block_bitmap_set(uint32 inode_number, uint8 state);
 
 int nxfs_get_attr(const char *path, struct stat *statbuf);

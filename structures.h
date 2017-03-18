@@ -3,6 +3,7 @@
 #define uint32 unsigned int
 #define uint16 unsigned short int
 #define uint8 uint8_t
+#define SUPERBLOCK_SIZE_TO_SAVE 106
 #define EXT2_NAME_LEN 255
 #define	EXT2_NDIR_BLOCKS		12
 
