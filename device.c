@@ -14,7 +14,7 @@ int write_block(void* buffer, uint32 block_number, uint32 size_of_block) {
 
 int device_write(void *buffer, uint32 size){
   int siz = fwrite(buffer, 1, size, f);
-  printf("size %d\n", siz);
+  // printf("size %d\n", siz);
   return ( siz == size );
 }
 
