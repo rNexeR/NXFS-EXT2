@@ -1328,7 +1328,7 @@ int nxfs_truncate(const char *path, off_t newSize)
 int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
     printf("write %s size %lu offset %lu\n", path, size, offset);
-    
+
     int bytes_to_write = size;
 
     struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
@@ -1392,5 +1392,17 @@ int nxfs_mknod(const char *path, mode_t mode, dev_t dev)
 int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 {
     printf("create %s mode %x\n", path, mode);
+    char parent_name[strlen(path)];
+    char child_name[strlen(path)];
+    parseNewEntry(path,parent_name,child_name);
+    printf("padre :%s hijo:%s\n",parent_name,child_name);
+    uint32 parent_inode_number = lookup_entry_inode(parent_name, ROOT_INO);
+    printf("parent inode number %d\n", parent_inode_number);
+    struct s_inode *inode = read_inode(parent_inode_number);
+    int result = add_entry(*inode, parent_inode_number, child_name, mode, ENTRY_FILE);
+    printf("result: %d\n", result);
+    //printf("fh index %lu\n",fileInfo->fh);
+    //struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
+    //printf("fh->inode %lu\n",fh->f_inode );
     return 0;
 }

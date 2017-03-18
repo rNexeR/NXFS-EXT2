@@ -26,7 +26,7 @@ extern "C" {
 #define ENTRY_FILE 1
 #define ENTRY_BASE_SIZE 8
 
-static const int print_info = 0;
+static const int print_info = 1;
 
 static struct s_superblock es;
 static struct s_block_group_descriptor *groups_table;
