@@ -898,120 +898,6 @@ int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_
     return 0;
 }
 
-/*int add_entry(struct s_inode parent_inode, uint32 parent_inode_number, char *entry_name, mode_t mode, uint8 file_type)
-{
-    printf("Entro add entry \n");
-    uint32 entry_name_len = strlen(entry_name);
-    printf("new entry name len %lu\n", entry_name_len);
-
-    //esto debe hacerse afuera de esta funcion
-        int parent_inode_group, parent_inode_index;
-        locate(parent_inode_number, es.s_inodes_per_group, &parent_inode_group, &parent_inode_index);
-
-        int new_inode = get_free_inode(parent_inode_group);
-        printf("Nuevo inode devuelto %d del grupo %d\n", new_inode, parent_inode_group);
-        if (new_inode < 0)
-            return -ENOENT;
-
-        int new_inode_group, new_inode_index;
-        locate(new_inode, es.s_inodes_per_group, &new_inode_group, &new_inode_index);
-    //hasta aqui
-
-    struct s_dir_entry2 *parent_last_entry = find_last_entry(parent_inode);
-    printf("last entry returned %s logic_block %lu offset %lu\n", parent_last_entry->name, parent_last_entry->block_number, parent_last_entry->offset);
-
-    struct s_dir_entry2 new_entry;
-    new_entry.inode = new_inode;
-    new_entry.rec_len = size_of_block;
-    new_entry.name_len = entry_name_len + 2;
-    new_entry.file_type = file_type;
-
-    char buffer[size_of_block];
-    if (size_of_block - (parent_last_entry->offset % size_of_block + ENTRY_BASE_SIZE + parent_last_entry->name_len) >= ENTRY_BASE_SIZE + entry_name_len + 2)
-    {
-        read_inode_logic_block(buffer, parent_inode, parent_last_entry->block_number);
-        printf("cabe en el block number actual\n");
-        uint32 new_rec_len = ENTRY_BASE_SIZE + parent_last_entry->name_len + 2;
-        printf("new rec_len %lu\n", new_rec_len);
-        memcpy(&buffer[parent_last_entry->offset + sizeof(uint32)], &new_rec_len, sizeof(uint16));
-
-        new_entry.rec_len = size_of_block - (parent_last_entry->offset + new_rec_len);
-
-        memcpy(&buffer[parent_last_entry->offset + new_rec_len], &new_entry, ENTRY_BASE_SIZE);
-        strncpy(&buffer[parent_last_entry->offset + new_rec_len + ENTRY_BASE_SIZE], entry_name, new_entry.name_len);
-        write_inode_logic_block(buffer, &parent_inode, parent_last_entry->block_number, parent_inode_number);
-        device_flush();
-    }
-    else
-    {
-        printf("tengo que reservar un nuevo bloque para el\n");
-
-        memcpy(buffer, &new_entry, ENTRY_BASE_SIZE);
-        strncpy(&buffer[ENTRY_BASE_SIZE], entry_name, new_entry.name_len);
-
-        parent_inode.i_size += size_of_block;
-
-        parent_inode.i_blocks += n_512k_blocks_per_block;
-        save_inode(parent_inode, parent_inode_number);
-
-        write_inode_logic_block(buffer, &parent_inode, parent_last_entry->block_number + 1, parent_inode_number);
-        device_flush();
-    }
-    inode_bitmap_set(new_inode, 1); //guardar inodo usado 
-
-    //llamar 2 veces a la funcion add_entry
-    if (file_type == ENTRY_FILE)
-        return 0;
-
-    printf("creating . and ..\n");
-
-    inode_bitmap_set(new_inode, 1);
-    new_entry.file_type = ENTRY_DIR;
-
-    struct s_inode entry_inode;
-    entry_inode.i_mode = file_type == ENTRY_DIR ? 0x4000 : mode;
-    entry_inode.i_uid = parent_inode.i_uid;
-    entry_inode.i_size = size_of_block;
-    entry_inode.i_gid = parent_inode.i_gid;
-    entry_inode.i_links_count = 1;
-    entry_inode.i_blocks = n_512k_blocks_per_block;
-    entry_inode.i_flags = 0;
-
-    save_inode(entry_inode, new_inode);
-
-    char buffer2[size_of_block];
-
-    new_entry.inode = new_inode;
-    new_entry.rec_len = 12;
-    new_entry.name_len = 1;
-    new_entry.file_type = ENTRY_DIR;
-    char new_entry_name[new_entry.rec_len - ENTRY_BASE_SIZE];
-    bzero(new_entry_name, new_entry.rec_len - ENTRY_BASE_SIZE);
-    strcpy(new_entry_name, ".");
-
-    memcpy(buffer2, &new_entry, ENTRY_BASE_SIZE);
-    memcpy(&buffer2[ENTRY_BASE_SIZE], new_entry_name, new_entry.name_len);
-
-    new_entry.inode = parent_inode_number;
-    new_entry.name_len = 2;
-    bzero(new_entry_name, new_entry.rec_len - ENTRY_BASE_SIZE);
-    new_entry.rec_len = size_of_block - 12;
-    strcpy(new_entry_name, "..");
-
-    memcpy(&buffer2[12], &new_entry, ENTRY_BASE_SIZE);
-    memcpy(&buffer2[12 + ENTRY_BASE_SIZE], new_entry_name, new_entry.name_len);
-
-    write_inode_logic_block(buffer2, &entry_inode, 0, new_inode);
-
-    device_flush();
-
-    groups_table[new_inode_group].bg_used_dirs_count++;
-
-    free(parent_last_entry);
-
-    return 0;
-}*/
-
 /*TEST*/
 void test()
 {
@@ -1355,10 +1241,6 @@ int nxfs_mkdir(const char *path, mode_t mode)
     inode_bitmap_set(new_inode, 1);
     // block_bitmap_set(first_block,1);
     save_inode(s_new_inode,new_inode);
-
-    // char buffer[size_of_block];
-    // bzero(buffer,size_of_block);
-    // write_inode_logic_block(buffer, &s_new_inode, 0, new_inode);
 
     // get new_inode_group to increment counter of inodes
     int new_inode_group, new_inode_index;
