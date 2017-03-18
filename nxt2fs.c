@@ -1341,8 +1341,9 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
     int bytes_to_write = size;
 
     struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
-
+    printf("write logic block 1\n");
     uint32 logic_block_number = offset / size_of_block;
+    printf("write logic block 1\n");
     uint32 number_of_blocks = size / size_of_block;
     if(number_of_blocks * size_of_block < size)
         number_of_blocks++;
@@ -1409,8 +1410,44 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     uint32 parent_inode_number = lookup_entry_inode(parent_name, ROOT_INO);
     printf("parent inode number %d\n", parent_inode_number);
     struct s_inode *inode = read_inode(parent_inode_number);
-    int result = add_entry(*inode, parent_inode_number, child_name, mode, ENTRY_FILE);
+    int parent_inode_group, parent_inode_index;
+    locate(parent_inode_number,es.s_inodes_per_group, &parent_inode_group,&parent_inode_index);
+    int new_inode = get_free_inode(parent_inode_group);
+    printf("Nuevo inode devuelto %d del grupo %d\n", new_inode, parent_inode_group);
+    if (new_inode < 0)
+        return -ENOENT;
+
+    struct s_inode s_new_inode;
+    s_new_inode.i_mode = mode;
+    s_new_inode.i_uid = inode->i_uid;
+    s_new_inode.i_size = 0;
+    s_new_inode.i_gid = inode->i_gid;
+    s_new_inode.i_links_count = 1;
+    s_new_inode.i_blocks = 0;
+    s_new_inode.i_flags = 0;
+    for(int i=0; i<EXT2_NDIR_BLOCKS;i++)
+        s_new_inode.i_direct[i]=0;
+    s_new_inode.i_indirect = 0;
+    s_new_inode.i_d_indirect = 0;
+    s_new_inode.i_t_indirect = 0;
+
+    struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
+    fh->f_inode = new_inode;
+    fh->f_size = 0;
+    fh->f_blocks_count = 0;
+    fileInfo->fh = (uint64_t)fh;
+
+    int result = add_entry(inode, parent_inode_number, new_inode, child_name, ENTRY_FILE);
     printf("result: %d\n", result);
+
+    //set new inode and first block as used in bitmap and save inode
+    inode_bitmap_set(new_inode, 1);
+    // block_bitmap_set(first_block,1);
+    save_inode(s_new_inode,new_inode);
+    save_meta_data();
+    free(inode);
+    //int result = add_entry(*inode, parent_inode_number, child_name, mode, ENTRY_FILE);
+    //printf("result: %d\n", result);
     //printf("fh index %lu\n",fileInfo->fh);
     //struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
     //printf("fh->inode %lu\n",fh->f_inode );
