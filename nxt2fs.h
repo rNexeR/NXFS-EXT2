@@ -40,12 +40,6 @@ static uint32 indirect_blocks_count;
 static uint32 d_indirect_blocks_count;
 static uint32 t_indirect_blocks_count;
 
-char *dir_path;
-char *file_path;
-
-uint32 current_dir_inode;
-uint32 current_file_inode;
-
 void read_group_descriptors();
 int read_sb();
 struct s_inode* read_inode(uint32);

@@ -933,6 +933,8 @@ int add_entry(struct s_inode parent_inode, uint32 parent_inode_number, char *ent
 
     groups_table[new_inode_group].bg_used_dirs_count++;
 
+    free(parent_last_entry);
+
     return 0;
 }
 
@@ -975,10 +977,6 @@ void nxfs_init(struct fuse_conn_info *conn)
     read_group_descriptors();
 
     test();
-    dir_path = (char *)malloc(1);
-    file_path = (char *)malloc(1);
-    dir_path[0] = 0;
-    file_path[0] = 0;
     printf("\n\n");
 }
 
@@ -1014,6 +1012,7 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
 
     if (print_info)
         printf("success\n");
+    free(dir_inode);
     return 0;
 }
 
@@ -1021,7 +1020,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
 {
 
     if (print_info)
-        printf("read dir %s current_dir_inode %lu\n", path, current_dir_inode);
+        printf("read dir %s\n", path);
 
     struct s_dir_entry2 *entry;
 
@@ -1071,7 +1070,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
     }
     if (print_info)
         printf("%u of %u\n", dir_inode->i_size, c_size);
-    free(dir_inode);
+    // free(dir_inode);
     return 0;
 }
 
@@ -1098,7 +1097,6 @@ int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
         struct s_inode *dir_inode = read_inode(entry_inode);
         if (is_dir(dir_inode->i_mode))
         {
-            current_dir_inode = entry_inode;
             struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
             fh->f_inode = entry_inode;
             fh->f_size = dir_inode->i_size;
@@ -1163,7 +1161,6 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
             struct s_inode *dir_inode = read_inode(entry_inode);
             if (is_file(dir_inode->i_mode))
             {
-                current_file_inode = entry_inode;
 
                 struct s_file_handle *fh = (s_file_handle *)malloc(sizeof(s_file_handle));
                 fh->f_inode = entry_inode;
@@ -1257,6 +1254,8 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
     save_meta_data();
 
+    free(parent_inode);
+
     return 0;
 }
 
@@ -1321,6 +1320,7 @@ int nxfs_truncate(const char *path, off_t newSize)
     if (print_info)
         printf("Saved meta data\n");
     free(path_child);
+    free(child_inode);
     return 0;
 }
 
@@ -1361,6 +1361,7 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
     inode->i_size += bytes_to_write;
 
     save_inode(*inode, fh->f_inode);
+    free(inode);
 
     return bytes_to_write;
 }
