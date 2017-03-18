@@ -62,7 +62,7 @@ int read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_bloc
 void write_t_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
 void write_d_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
 void write_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
-void write_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_block_number, uint32 inode_number);
+void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_block_number, uint32 inode_number);
 
 void read_block_bitmap(void *buffer, int group_number);
 void read_inode_bitmap(void *buffer, int group_number);
