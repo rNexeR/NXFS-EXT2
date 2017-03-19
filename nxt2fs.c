@@ -1441,6 +1441,7 @@ int nxfs_rmdir(const char *path)
 int nxfs_unlink(const char *path)
 {
     printf("unlink %s\n", path);
+
     return 0;
 }
 
