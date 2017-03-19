@@ -893,6 +893,62 @@ int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_
     return 0;
 }
 
+int take_left_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_entry2* to_delete_entry){
+    char buffer[size_of_block];
+    read_inode_logic_block(buffer, *inode, to_delete_entry->block_number);
+
+    struct s_dir_entry2 *next_entry = (struct s_dir_entry2*) &buffer[to_delete_entry->offset + to_delete_entry->rec_len];
+    uint16 new_rec_len = to_delete_entry->rec_len + next_entry->rec_len;
+    memcpy(&buffer[to_delete_entry->offset], next_entry, ENTRY_BASE_SIZE);
+    memcpy(&buffer[to_delete_entry->offset + ENTRY_BASE_SIZE], next_entry->name, next_entry->name_len);
+    memcpy(&buffer[to_delete_entry->offset + sizeof(uint32)], &new_rec_len, sizeof(uint16));
+    write_inode_logic_block(buffer, inode, to_delete_entry->block_number, inode_number);
+    return 0;
+}
+
+int take_right_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_entry2* previous_entry){
+    char buffer[size_of_block];
+    read_inode_logic_block(buffer, *inode, previous_entry->block_number);
+
+    struct s_dir_entry2 *target = (struct s_dir_entry2*) &buffer[previous_entry->offset + previous_entry->rec_len];
+    uint16 new_rec_len = previous_entry->rec_len + target->rec_len;
+    memcpy(&buffer[previous_entry->offset + sizeof(uint32)], &new_rec_len, sizeof(uint16));
+    write_inode_logic_block(buffer, inode, previous_entry->block_number, inode_number);
+    return 0;
+}
+
+int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char* entry_name){
+    if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, ".."))
+        return -EPERM;
+
+    uint32 entry_name_len = strlen(entry_name);
+    printf("new entry name len %lu\n", entry_name_len);
+
+    int parent_inode_group, parent_inode_index;
+    locate(parent_inode_number, es.s_inodes_per_group, &parent_inode_group, &parent_inode_index);
+
+    struct s_dir_entry2* to_delete_entry = find_entry(*parent_inode, entry_name);
+    struct s_dir_entry2* previous_entry = find_previous_entry(*parent_inode, entry_name);
+    struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
+
+    if(!to_delete_entry)
+        return -ENOENT;
+    else if(to_delete_entry->offset == 0 && to_delete_entry->rec_len != size_of_block){
+        return take_left_entry(parent_inode, parent_inode_number, to_delete_entry);
+    }else if(to_delete_entry->offset == 0 && to_delete_entry->rec_len == size_of_block){
+        parent_inode->i_size -= size_of_block;
+        parent_inode->i_blocks -= n_512k_blocks_per_block;
+        free_logic_block(parent_inode, to_delete_entry->block_number);
+    }else{
+        return take_right_entry(parent_inode, parent_inode_number, previous_entry);
+    }
+
+    // save_inode(*parent_inode, parent_inode_number);
+
+    return 0;
+
+}
+
 /*TEST*/
 void test()
 {
