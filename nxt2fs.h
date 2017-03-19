@@ -69,7 +69,7 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
 struct s_dir_entry2* find_last_entry(struct s_inode inode);
 struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name);
 struct s_dir_entry2* find_previous_entry(struct s_inode inode, const char *entry_name);
-int add_entry(struct s_inode parent_inode, uint32 parent_inode_number, char *entry_name, mode_t mode, uint8 file_type);
+int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_inode, char *entry_name, uint8 file_type);
 int take_left_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_entry2* to_delete_entry);
 int take_right_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_entry2* previous_entry);
 int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char* entry_name);
