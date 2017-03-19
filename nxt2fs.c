@@ -11,6 +11,9 @@ void read_group_descriptors()
     }
 
     groups_table = (struct s_block_group_descriptor *)malloc(sizeof(struct s_block_group_descriptor) * number_of_groups);
+    Last_full_block_galaxy = (int *)malloc(sizeof(int)*number_of_groups);
+    for(int i=0;i<number_of_groups;i++)
+        Last_full_block_galaxy[i]=0;
 
     uint32 offset = size_of_block;
     if (size_of_block == 1024)
@@ -213,7 +216,8 @@ void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_
     uint32 position = logic_position / (size_of_block / sizeof(uint32));
     uint32 offset = logic_position - position * d_indirect_blocks_count;
 
-    printf("writing t_indirect block number: %lu logic pos %lu position %lu offset %lu\n", t_indirect_blocks[position], logic_position, position, offset);
+    if (print_info)
+        printf("writing t_indirect block number: %lu logic pos %lu position %lu offset %lu\n", t_indirect_blocks[position], logic_position, position, offset);
 
     if (t_indirect_blocks[position] == 0)
     {
@@ -222,7 +226,8 @@ void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_
         int new_block = get_free_block(group);
         if (new_block < 0)
         {
-            printf("Error getting new block\n");
+            if (print_info)
+                printf("Error getting new block\n");
             return;
         }
 
@@ -241,7 +246,8 @@ void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_
 
     uint32 position = logic_position / (size_of_block / sizeof(uint32));
     uint32 offset = logic_position - position * indirect_blocks_count;
-    printf("writing d_indirect block number: %lu logic pos %lu position %lu offset %lu\n", d_indirect_blocks[position], logic_position, position, offset);
+    if (print_info)
+        printf("writing d_indirect block number: %lu logic pos %lu position %lu offset %lu\n", d_indirect_blocks[position], logic_position, position, offset);
 
     if (d_indirect_blocks[position] == 0)
     {
@@ -250,7 +256,8 @@ void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_
         int new_block = get_free_block(group);
         if (new_block < 0)
         {
-            printf("Error getting new block\n");
+            if (print_info)
+                printf("Error getting new block\n");
             return;
         }
 
@@ -266,7 +273,8 @@ void write_indirect_block(void *buffer, uint32 indirect_block, uint32 logic_posi
 {
     uint32 indirect_blocks[size_of_block / sizeof(uint32)];
     read_block(indirect_blocks, indirect_block, size_of_block);
-    printf("writing indirect block number: %lu logic position %lu\n", indirect_blocks[logic_position], logic_position);
+    if (print_info)
+        printf("writing indirect block number: %lu logic position %lu\n", indirect_blocks[logic_position], logic_position);
     if (indirect_blocks[logic_position] == 0)
     {
         int group, index;
@@ -274,7 +282,8 @@ void write_indirect_block(void *buffer, uint32 indirect_block, uint32 logic_posi
         int new_block = get_free_block(group);
         if (new_block < 0)
         {
-            printf("Error getting new block\n");
+            if (print_info)
+                printf("Error getting new block\n");
             return;
         }
 
@@ -292,7 +301,8 @@ void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_b
     int new_block = get_free_block(group);
     if (new_block < 0)
     {
-        printf("Error getting new block\n");
+        if (print_info)
+            printf("Error getting new block\n");
         return;
     }
 
@@ -461,9 +471,11 @@ void block_bitmap_set(uint32 inode_number, uint8 state)
     int block_group, block_index;
     locate(inode_number, es.s_blocks_per_group, &block_group, &block_index);
 
-    printf("----------------------------------------------------\n");
-    printf("block bitmap set %lu %u\n", inode_number, state);
-    printf("before bb set, first av. block %lu\n", get_free_block(block_group));
+    if (print_info){
+        printf("----------------------------------------------------\n");
+        printf("block bitmap set %lu %u\n", inode_number, state);
+        printf("before bb set, first av. block %lu\n", get_free_block(block_group));
+    }
 
     byte buffer[size_of_block];
     read_block_bitmap(buffer, block_group);
@@ -487,8 +499,11 @@ void block_bitmap_set(uint32 inode_number, uint8 state)
     }
 
     write_block(buffer, groups_table[block_group].bg_block_bitmap, size_of_block);
-    printf("after bb set, first av. block %lu\n", get_free_block(block_group));
-    printf("----------------------------------------------------\n");
+    if (print_info)
+    {
+        printf("after bb set, first av. block %lu\n", get_free_block(block_group));
+        printf("----------------------------------------------------\n");
+    }
 }
 
 int get_free_block_in_group(uint32 group_number)
@@ -496,10 +511,24 @@ int get_free_block_in_group(uint32 group_number)
     byte buffer[size_of_block];
     read_block_bitmap(buffer, group_number);
 
-    for (int i = 0; i < es.s_blocks_per_group; i++)
+    for (int i = Last_full_block_galaxy[group_number]; i < es.s_blocks_per_group; i++)
     {
-        if (bitmapGet(buffer, i) == 0)
-            return i;
+        unsigned char galaxy = buffer[i/BIT];
+        bool isFull = (galaxy^0xFF)==0;
+        if (print_info){
+            printf("i: %d, group_number: %d, isFull: %d\n",i,group_number, isFull);
+            printf("Last_full_block_galaxy[group_number]: %d\n", Last_full_block_galaxy[group_number]);
+        }
+        if (isFull){
+            i+=BIT-1;
+            Last_full_block_galaxy[group_number]=i;
+            continue;
+        }else{
+            if (print_info)
+                printf("galaxy: %d\n", galaxy);
+            if (bitmapGet(buffer, i) == 0)
+                return i;
+        }
     }
     return -1;
 }
@@ -1336,14 +1365,17 @@ int nxfs_truncate(const char *path, off_t newSize)
 /*NOT IMPLEMENTED, YET*/
 int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
-    printf("write %s size %lu offset %lu\n", path, size, offset);
+    if (print_info)
+        printf("write %s size %lu offset %lu\n", path, size, offset);
 
     int bytes_to_write = size;
 
     struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
-    printf("write logic block 1\n");
+    if (print_info)
+        printf("write logic block 1\n");
     uint32 logic_block_number = offset / size_of_block;
-    printf("write logic block 1\n");
+    if (print_info)
+        printf("write logic block 1\n");
     uint32 number_of_blocks = size / size_of_block;
     if(number_of_blocks * size_of_block < size)
         number_of_blocks++;
@@ -1351,17 +1383,18 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
 
     for (int i = 0; i < number_of_blocks; i++)
     {
-        printf("write logic block %d\n", logic_block_number + i);
+        if (print_info)
+            printf("write logic block %d\n", logic_block_number + i);
         // bzero(buffer, size_of_block);
         char buffer[size_of_block];
         memcpy(buffer, &buf[i*size_of_block], size_of_block);
         // printf("buffer to write {%s}\n", buffer);
         write_inode_logic_block(buffer, inode, logic_block_number + i, fh->f_inode);
-        printf("wrote\n", logic_block_number + i);
+        if (print_info)
+            printf("wrote\n", logic_block_number + i);
     }
 
     if (offset + size > inode->i_size){
-        printf("entro al if\n");
         uint32 n512_blocks = bytes_to_write / 512;
         if(n512_blocks*512 < bytes_to_write)
             n512_blocks++;
