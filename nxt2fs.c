@@ -756,6 +756,7 @@ struct s_dir_entry2 *find_entry(struct s_inode inode, const char *entry_name)
 
         if (strcmp(file_name, entry_name) == 0)
         {
+            c_size -= entry->rec_len;
             struct s_dir_entry2 *return_entry = (struct s_dir_entry2 *)malloc(sizeof(struct s_dir_entry2));
             return_entry->inode = entry->inode;
             return_entry->rec_len = entry->rec_len;
@@ -796,13 +797,11 @@ struct s_dir_entry2 *find_previous_entry(struct s_inode inode, const char *entry
 
         file_name[entry->name_len] = 0; /* append null char to the file name */
 
-        c_size += entry->rec_len;
-
         if (strcmp(file_name, entry_name) == 0)
         {
             if (previous_entry == NULL)
                 return NULL;
-            uint32 offset = (c_size % size_of_block) - entry->rec_len;
+            uint32 offset = (c_size % size_of_block) - previous_entry->rec_len;
             struct s_dir_entry2 *return_entry;
             if (offset >= 0)
             {
@@ -822,6 +821,7 @@ struct s_dir_entry2 *find_previous_entry(struct s_inode inode, const char *entry
 
             return return_entry;
         }
+        c_size += entry->rec_len;
         previous_entry = entry;
         entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
     }
@@ -1425,6 +1425,32 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
 int nxfs_rename(const char *path, const char *newpath)
 {
     printf("rename %s newPath %s\n", path, newpath);
+
+    uint32 len = strlen(path);
+    char parent[len];
+    char old_entry_name[len];
+    char new_entry_name[len];
+
+    parseNewEntry(path, parent, old_entry_name);
+    parseNewEntry(path, parent, new_entry_name);
+
+    uint32 parent_inode_number = lookup_entry_inode(parent, ROOT_INO);
+    printf("Parent number %d\n", parent_inode_number);
+
+    struct s_inode *parent_inode = read_inode(parent_inode_number);
+
+    struct s_dir_entry2* old_entry = find_entry(*parent_inode, old_entry_name);
+    struct s_inode* old_entry_inode = read_inode(old_entry->inode);
+
+    remove_entry(parent_inode, parent_inode_number, old_entry_name);
+    add_entry(parent_inode, parent_inode_number, new_entry_name, old_entry_inode->i_mode, old_entry->file_type);
+
+    save_inode(parent_inode, parent_inode_number);
+    save_meta_data();
+
+    free(old_entry_inode);
+    free(old_entry);
+    free(parent_inode);
     return 0;
 }
 
