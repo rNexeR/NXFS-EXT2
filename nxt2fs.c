@@ -1471,7 +1471,18 @@ int nxfs_rename(const char *path, const char *newpath)
 int nxfs_rmdir(const char *path)
 {
     printf("rmdir %s\n", path);
-    return 0;
+    char path_copy[strlen(path)+1];
+    strncpy(path_copy, path, strlen(path));
+    path_copy[strlen(path)] = 0;
+    uint32 parent_inode_number = lookup_entry_inode(path_copy,ROOT_INO);
+
+    struct s_inode* parent_inode = read_inode(parent_inode_number);
+    struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
+    if(strcmp(last_entry->name, "..") == 0){
+        nxfs_unlink(path);
+        return 0;
+    }else
+        return -EPERM;
 }
 
 int nxfs_unlink(const char *path)
