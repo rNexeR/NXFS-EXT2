@@ -936,7 +936,7 @@ int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char*
 
     printf("to_delete_entry: {b_number %lu} {offset: %lu} \n", to_delete_entry->block_number, to_delete_entry->offset);
     printf("previous_entry: {b_number %lu} {offset: %lu} \n", previous_entry->block_number, previous_entry->offset);
-    
+
     if(!to_delete_entry){
         printf("entry not found\n");
         return -ENOENT;
@@ -1477,7 +1477,30 @@ int nxfs_rmdir(const char *path)
 int nxfs_unlink(const char *path)
 {
     printf("unlink %s\n", path);
+    //truncating inode
+    nxfs_truncate(path, 0);
 
+    //free inode
+    uint32 len = strlen(path);
+    char parent[len];
+    char child_name[len];
+    parseNewEntry(path, parent, child_name);
+    uint32 parent_inode_number = lookup_entry_inode(parent,ROOT_INO);
+    printf("Parent number %d\n", parent_inode_number);
+    struct s_inode *parent_inode = read_inode(parent_inode_number);
+
+    struct s_dir_entry2* entry_child = find_entry(*parent_inode,child_name);
+    uint32 inode_index = entry_child->inode;
+    //locate()
+    remove_entry(parent_inode, parent_inode_number, child_name);
+    inode_bitmap_set(inode_index,0);
+
+
+    save_inode(*parent_inode, parent_inode_number);
+    save_meta_data();
+    //removing entry in parent inode
+    free(parent_inode);
+    free(entry_child);
     return 0;
 }
 
