@@ -239,7 +239,7 @@ void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_
 
     uint32 position = logic_position / (size_of_block / sizeof(uint32));
     uint32 offset = logic_position - position * indirect_blocks_count;
-    
+
     if (d_indirect_blocks[position] == 0)
     {
         int group, index;
@@ -929,7 +929,7 @@ int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char*
 
     struct s_dir_entry2* to_delete_entry = find_entry(*parent_inode, entry_name);
     struct s_dir_entry2* previous_entry = find_previous_entry(*parent_inode, entry_name);
-    struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
+    //struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
 
     if(!to_delete_entry)
         return -ENOENT;
