@@ -45,8 +45,8 @@ int read_sb();
 struct s_inode* read_inode(uint32);
 int get_free_group_inode(uint32);
 int get_free_block_in_group(uint32 group_number);
-int get_free_inode(uint32);
-int get_free_block(uint32);
+uint32 get_free_inode(uint32);
+uint32 get_free_block(uint32);
 
 void read_t_indirect_block(void *, uint32, uint32);
 void read_d_indirect_block(void *, uint32, uint32);
@@ -60,7 +60,7 @@ void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_b
 
 void read_block_bitmap(void *buffer, int group_number);
 void read_inode_bitmap(void *buffer, int group_number);
-void inode_bitmap_set(int inode_number, uint8 state);
+void inode_bitmap_set(uint32 inode_number, uint8 state);
 void block_bitmap_set(uint32 inode_number, uint8 state);
 
 int nxfs_get_attr(const char *path, struct stat *statbuf);
@@ -93,6 +93,9 @@ int nxfs_truncate(const char *path, off_t newSize);
 int nxfs_unlink(const char *path);
 int nxfs_mknod(const char *path, mode_t mode, dev_t dev);
 int nxfs_create(const char *, mode_t, struct fuse_file_info *);
+
+int nxfs_utime(const char *, struct utimbuf *);
+
 int save_inode(struct s_inode inode, uint32 index);
 int save_meta_data();
 #ifdef __cplusplus
