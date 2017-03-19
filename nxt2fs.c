@@ -1447,3 +1447,8 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     //printf("fh->inode %lu\n",fh->f_inode );
     return 0;
 }
+
+int nxfs_utime(const char * path, struct utimbuf *times){
+    printf("utime %s\n", path);
+    return 0;
+}
