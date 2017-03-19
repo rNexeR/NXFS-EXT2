@@ -748,12 +748,13 @@ struct s_dir_entry2 *find_entry(struct s_inode inode, const char *entry_name)
 
         file_name[entry->name_len] = 0; /* append null char to the file name */
                                         // if(print_info)
-        // printf("%lu {%s} %lu - %lu\n", entry->inode, file_name, c_size, c_size + entry->rec_len);
+        printf("%lu {%s} {offset %lu} {offset + rec_len %lu}\n", entry->inode, file_name, c_size, c_size + entry->rec_len);
 
         c_size += entry->rec_len;
 
         if (strcmp(file_name, entry_name) == 0)
         {
+            c_size -= entry->rec_len;
             struct s_dir_entry2 *return_entry = (struct s_dir_entry2 *)malloc(sizeof(struct s_dir_entry2));
             return_entry->inode = entry->inode;
             return_entry->rec_len = entry->rec_len;
@@ -762,11 +763,13 @@ struct s_dir_entry2 *find_entry(struct s_inode inode, const char *entry_name)
             strcpy(return_entry->name, entry->name);
             return_entry->block_number = current_block - 1;
             return_entry->offset = c_size % size_of_block;
+            printf("\n\n");
             return return_entry;
         }
 
         entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
     }
+    printf("\n\n");
     return NULL;
 }
 
@@ -794,13 +797,11 @@ struct s_dir_entry2 *find_previous_entry(struct s_inode inode, const char *entry
 
         file_name[entry->name_len] = 0; /* append null char to the file name */
 
-        c_size += entry->rec_len;
-
         if (strcmp(file_name, entry_name) == 0)
         {
             if (previous_entry == NULL)
                 return NULL;
-            uint32 offset = (c_size % size_of_block) - entry->rec_len;
+            uint32 offset = (c_size % size_of_block) - previous_entry->rec_len;
             struct s_dir_entry2 *return_entry;
             if (offset >= 0)
             {
@@ -820,6 +821,7 @@ struct s_dir_entry2 *find_previous_entry(struct s_inode inode, const char *entry
 
             return return_entry;
         }
+        c_size += entry->rec_len;
         previous_entry = entry;
         entry = (struct s_dir_entry2 *)((void *)entry + entry->rec_len); /* move to the next entry */
     }
@@ -828,14 +830,14 @@ struct s_dir_entry2 *find_previous_entry(struct s_inode inode, const char *entry
 
 int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_inode, char *entry_name, uint8 file_type)
 {
-    printf("Entro add entry, new_inode: %d \n",new_inode);
-    printf("parent_inode_number: %d \n",parent_inode_number);
+    // printf("Entro add entry, new_inode: %d \n",new_inode);
+    // printf("parent_inode_number: %d \n",parent_inode_number);
     uint32 entry_name_len = strlen(entry_name);
-    printf("new entry name len %lu\n", entry_name_len);
+    // printf("new entry name len %lu\n", entry_name_len);
 
     struct s_dir_entry2 *parent_last_entry = find_last_entry(*parent_inode);
-    if (parent_last_entry)
-        printf("last entry returned %s logic_block %lu offset %lu\n", parent_last_entry->name, parent_last_entry->block_number, parent_last_entry->offset);
+    // if (parent_last_entry)
+    //     printf("last entry returned %s logic_block %lu offset %lu\n", parent_last_entry->name, parent_last_entry->block_number, parent_last_entry->offset);
 
     struct s_dir_entry2 new_entry;
     new_entry.inode = new_inode;
@@ -846,12 +848,12 @@ int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_
     char buffer[size_of_block];
     bzero(buffer,size_of_block);
 
-    printf("parent_last_entry: %d\n", parent_last_entry);
+    // printf("parent_last_entry: %d\n", parent_last_entry);
 
     if (!parent_last_entry)
     {
         // read_inode_logic_block(buffer, *parent_inode, 0);
-        printf("Bloque virgen 0\n");
+        // printf("Bloque virgen 0\n");
         parent_inode->i_size += size_of_block;
 
         parent_inode->i_blocks += n_512k_blocks_per_block;
@@ -863,9 +865,9 @@ int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_
     }else if (size_of_block - (parent_last_entry->offset % size_of_block + ENTRY_BASE_SIZE + parent_last_entry->name_len) >= ENTRY_BASE_SIZE + entry_name_len + 2)
     {
         read_inode_logic_block(buffer, *parent_inode, parent_last_entry->block_number);
-        printf("cabe en el block number actual\n");
+        // printf("cabe en el block number actual\n");
         uint32 new_rec_len = ENTRY_BASE_SIZE + parent_last_entry->name_len + 2;
-        printf("new rec_len %lu\n", new_rec_len);
+        // printf("new rec_len %lu\n", new_rec_len);
         memcpy(&buffer[parent_last_entry->offset + sizeof(uint32)], &new_rec_len, sizeof(uint16));
 
         new_entry.rec_len = size_of_block - (parent_last_entry->offset + new_rec_len);
@@ -876,7 +878,7 @@ int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_
     }
     else
     {
-        printf("tengo que reservar un nuevo bloque para el\n");
+        // printf("tengo que reservar un nuevo bloque para el\n");
 
         memcpy(buffer, &new_entry, ENTRY_BASE_SIZE);
         strncpy(&buffer[ENTRY_BASE_SIZE], entry_name, new_entry.name_len);
@@ -918,7 +920,8 @@ int take_right_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_en
 }
 
 int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char* entry_name){
-    if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, ".."))
+    printf("remove entry starts\n");
+    if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0)
         return -EPERM;
 
     uint32 entry_name_len = strlen(entry_name);
@@ -931,15 +934,22 @@ int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char*
     struct s_dir_entry2* previous_entry = find_previous_entry(*parent_inode, entry_name);
     //struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
 
-    if(!to_delete_entry)
+    printf("to_delete_entry: {b_number %lu} {offset: %lu} \n", to_delete_entry->block_number, to_delete_entry->offset);
+    printf("previous_entry: {b_number %lu} {offset: %lu} \n", previous_entry->block_number, previous_entry->offset);
+    
+    if(!to_delete_entry){
+        printf("entry not found\n");
         return -ENOENT;
-    else if(to_delete_entry->offset == 0 && to_delete_entry->rec_len != size_of_block){
+    }else if(to_delete_entry->offset == 0 && to_delete_entry->rec_len != size_of_block){
+        printf("first entry of block but not only one\n");
         return take_left_entry(parent_inode, parent_inode_number, to_delete_entry);
     }else if(to_delete_entry->offset == 0 && to_delete_entry->rec_len == size_of_block){
+        printf("first entry of block ant only one\n");
         parent_inode->i_size -= size_of_block;
         parent_inode->i_blocks -= n_512k_blocks_per_block;
         free_logic_block(parent_inode, to_delete_entry->block_number);
     }else{
+        printf("has previous_entry\n");
         return take_right_entry(parent_inode, parent_inode_number, previous_entry);
     }
 
@@ -994,7 +1004,7 @@ void nxfs_init(struct fuse_conn_info *conn)
 int nxfs_get_attr(const char *path, struct stat *statbuf)
 {
 
-    if (print_info)
+    // if (print_info)
         printf("getattr %s\n", path);
     memset(statbuf, 0, sizeof(struct stat));
 
@@ -1428,7 +1438,33 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
 
 int nxfs_rename(const char *path, const char *newpath)
 {
-    printf("rename %s newPath %s\n", path, newpath);
+    printf("\n\nrename %s newPath %s\n", path, newpath);
+
+    uint32 len = strlen(path);
+    char parent[len];
+    char old_entry_name[len];
+    char new_entry_name[len];
+
+    parseNewEntry(path, parent, old_entry_name);
+    parseNewEntry(newpath, parent, new_entry_name);
+
+    uint32 parent_inode_number = lookup_entry_inode(parent, ROOT_INO);
+    printf("Parent number %d\n", parent_inode_number);
+
+    struct s_inode *parent_inode = read_inode(parent_inode_number);
+
+    struct s_dir_entry2* old_entry = find_entry(*parent_inode, old_entry_name);
+    struct s_inode* old_entry_inode = read_inode(old_entry->inode);
+
+    remove_entry(parent_inode, parent_inode_number, old_entry_name);
+    add_entry(parent_inode, parent_inode_number, old_entry->inode, new_entry_name, old_entry->file_type);
+
+    save_inode(*parent_inode, parent_inode_number);
+    save_meta_data();
+
+    free(old_entry_inode);
+    free(old_entry);
+    free(parent_inode);
     return 0;
 }
 
