@@ -207,7 +207,8 @@ int read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_bloc
 
 void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_position, uint32 inode_number)
 {
-    uint32 t_indirect_blocks[size_of_block / sizeof(uint32)];
+    uint32 t_indirect_blocks[indirect_blocks_count];
+    bzero(t_indirect_blocks, size_of_block);
     read_block(t_indirect_blocks, t_indirect_block, size_of_block);
 
     uint32 position = logic_position / (size_of_block / sizeof(uint32));
@@ -234,7 +235,8 @@ void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_
 
 void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_position, uint32 inode_number)
 {
-    uint32 d_indirect_blocks[size_of_block / sizeof(uint32)];
+    uint32 d_indirect_blocks[indirect_blocks_count];
+    bzero(d_indirect_blocks, size_of_block);
     read_block(d_indirect_blocks, d_indirect_block, size_of_block);
 
     uint32 position = logic_position / (size_of_block / sizeof(uint32));
@@ -261,7 +263,8 @@ void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_
 
 void write_indirect_block(void *buffer, uint32 indirect_block, uint32 logic_position, uint32 inode_number)
 {
-    uint32 indirect_blocks[size_of_block / sizeof(uint32)];
+    uint32 indirect_blocks[indirect_blocks_count];
+    bzero(indirect_blocks, size_of_block);
     read_block(indirect_blocks, indirect_block, size_of_block);
     if (indirect_blocks[logic_position] == 0)
     {
