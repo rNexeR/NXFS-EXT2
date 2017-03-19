@@ -118,9 +118,10 @@ int main(int argc, char *argv[]) {
 	nxfs_oper.fsync = nxfs_fsync;*/
 	nxfs_oper.opendir = nxfs_opendir;
 	nxfs_oper.readdir = nxfs_read_dir;
-	/*
-	nxfs_oper.fsyncdir = nxfs_fsyncdir;*/
+	
 	nxfs_oper.init = nxfs_init;
+
+	nxfs_oper.utime = nxfs_utime;
 	// nxfs_oper.create = nxfs_creat;
 
 	printf("mounting file system...\n");
