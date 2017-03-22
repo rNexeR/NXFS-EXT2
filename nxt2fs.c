@@ -472,7 +472,6 @@ void read_block_bitmap(void *buffer, int group_number)
 
 void block_bitmap_set(uint32 inode_number, uint8 state)
 {
-    printf("----------------------------------------------------\n");
     int block_group, block_index;
     locate(inode_number, es.s_blocks_per_group, &block_group, &block_index);
 
@@ -541,6 +540,7 @@ int get_free_block_in_group(uint32 group_number)
 
 uint32 get_free_block(uint32 group_number)
 {
+    if (group_number<last_groupblock)group_number=last_groupblock;
     int new_block = get_free_block_in_group(group_number++);
     while (new_block < 0 && group_number <= number_of_groups)
     {
@@ -757,7 +757,8 @@ struct s_dir_entry2 *find_last_entry(struct s_inode inode)
     strncpy(ret->name, entry->name, entry->name_len);
     ret->block_number = current_block - 1;
     ret->offset = c_size % size_of_block;
-    printf("Salio last entry con %s\n", ret->name);
+    if (print_info)
+        printf("Salio last entry con %s\n", ret->name);
     return ret;
 }
 
@@ -788,7 +789,8 @@ struct s_dir_entry2 *find_entry(struct s_inode inode, const char *entry_name)
 
         file_name[entry->name_len] = 0; /* append null char to the file name */
                                         // if(print_info)
-        printf("%lu {%s} {offset %lu} {offset + rec_len %lu}\n", entry->inode, file_name, c_size, c_size + entry->rec_len);
+        if (print_info)
+            printf("%lu {%s} {offset %lu} {offset + rec_len %lu}\n", entry->inode, file_name, c_size, c_size + entry->rec_len);
 
         c_size += entry->rec_len;
 

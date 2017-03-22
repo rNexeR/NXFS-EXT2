@@ -28,6 +28,7 @@ extern "C" {
 
 static const int print_info = 0;
 static int *Last_full_block_galaxy;
+static int last_groupblock=0;
 
 static struct s_superblock es;
 static struct s_block_group_descriptor *groups_table;
