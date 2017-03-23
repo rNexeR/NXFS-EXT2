@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #define uint32 unsigned int
+#define uint64 unsigned long int
 #define uint16 unsigned short int
 #define uint8 uint8_t
 #define SUPERBLOCK_SIZE_TO_SAVE 106

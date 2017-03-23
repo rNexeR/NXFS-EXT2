@@ -16,15 +16,16 @@ void read_group_descriptors()
         Last_full_block_galaxy[i]=0;
 
     uint32 offset = size_of_block;
-    if (size_of_block == 1024)
-        offset += 1024;
+     if (size_of_block == 1024)
+         offset += 1024;
 
     device_seek(offset);
-    printf("\n");
-
+    uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
+    printf("size of gd %u and list %u\n",sizeof(struct s_block_group_descriptor),size_of_group_descriptor);
+    int result_read = device_read(groups_table, size_of_group_descriptor);
+    printf("result %d\n",result_read );
     for (uint32 i = 0; i < number_of_groups; ++i)
     {
-        device_read(&groups_table[i], sizeof(struct s_block_group_descriptor));
 
         if (print_info)
         {
@@ -75,39 +76,46 @@ int save_meta_data()
 
     device_seek(1024);
     device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-    if (print_info)
+    //if (print_info)
         printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 0, 1024, 0);
 
     uint32 offset_group_descriptor = size_of_block;
-    uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
+    if(size_of_block == 1024)
+      offset_group_descriptor+=1024;
 
-    device_seek(1024 + size_of_block + offset_group_descriptor);
-    device_write(&groups_table, size_of_group_descriptor);
-    if (print_info)
+    uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
+    //long int var = 1024 + size_of_block;
+    printf("number of groups: %d\n",number_of_groups );
+  //  printf("offset %d - %lu\n", var, (unsigned)var);
+    device_seek(offset_group_descriptor);
+    printf("Paso \n");
+
+    device_write(groups_table, size_of_group_descriptor);
+    //if (print_info)
         printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 0, 1024 + size_of_block + offset_group_descriptor, 1);
 
     uint32 offset = (1 * es.s_blocks_per_group) * size_of_block;
-    device_seek(1024 + offset);
+    device_seek(offset);
     device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-    if (print_info)
+    //if (print_info)
         printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 1, 1024 + offset, es.s_blocks_per_group);
 
-    device_seek(1024 + offset + size_of_block);
-    device_write(&groups_table, size_of_group_descriptor);
-    if (print_info)
+    device_seek(offset + size_of_block);
+    device_write((void*)groups_table, size_of_group_descriptor);
+    //if (print_info)
         printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 1, 1024 + offset + size_of_block, es.s_blocks_per_group + 1);
 
     for (int i = 3; i < number_of_groups; i *= 3)
     {
         uint32 block = (i * es.s_blocks_per_group);
         offset = block * size_of_block;
-        device_seek(1024 + offset);
+        device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        if (print_info)
+        //if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
-        device_seek(1024 + offset + size_of_block);
-        device_write(&groups_table, size_of_group_descriptor);
-        if (print_info)
+        device_seek(offset + size_of_block);
+        device_write((void*)groups_table, size_of_group_descriptor);
+        //if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -115,13 +123,13 @@ int save_meta_data()
     {
         uint32 block = (i * es.s_blocks_per_group);
         offset = block * size_of_block;
-        device_seek(1024 + offset);
+        device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        if (print_info)
+        //if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
-        device_seek(1024 + offset + size_of_block);
-        device_write(&groups_table, size_of_group_descriptor);
-        if (print_info)
+        device_seek(offset + size_of_block);
+        device_write((void*)groups_table, size_of_group_descriptor);
+        //if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -129,13 +137,13 @@ int save_meta_data()
     {
         uint32 block = (i * es.s_blocks_per_group);
         offset = block * size_of_block;
-        device_seek(1024 + offset);
+        device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        if (print_info)
+        //if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
-        device_seek(1024 + offset + size_of_block);
-        device_write(&groups_table, size_of_group_descriptor);
-        if (print_info)
+        device_seek(offset + size_of_block);
+        device_write((void*)groups_table, size_of_group_descriptor);
+        //if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -1446,7 +1454,7 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
     int bytes_to_write = size;
 
     struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
-    
+
     if (print_info)
         printf("write logic block 1\n");
 
@@ -1614,9 +1622,12 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 
     //set new inode and first block as used in bitmap and save inode
     inode_bitmap_set(new_inode, 1);
+    printf("result1: %d\n", result);
     // block_bitmap_set(first_block,1);
     save_inode(s_new_inode,new_inode);
+    printf("result2: %d\n", result);
     save_meta_data();
+    printf("result3: %d\n", result);
     free(inode);
     //int result = add_entry(*inode, parent_inode_number, child_name, mode, ENTRY_FILE);
     //printf("result: %d\n", result);
