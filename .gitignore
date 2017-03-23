@@ -35,6 +35,7 @@
 #generated device dir and fs.ext2
 device
 fs.ext2
+fs2.ext2
 bin
 Test
 

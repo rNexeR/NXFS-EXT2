@@ -26,6 +26,21 @@ extern "C" {
 #define ENTRY_FILE 1
 #define ENTRY_BASE_SIZE 8
 
+//Cache
+static int group_block_bitmap_loaded;
+static int group_inode_bitmap_loaded;
+
+static byte* block_bitmap_buffer;
+static byte* inode_bitmap_buffer;
+
+static uint32 indirect_block_loaded;
+static uint32 d_indirect_block_loaded;
+static uint32 t_indirect_block_loaded;
+
+static uint32* indirect_block_buffer;
+static uint32* d_indirect_block_buffer;
+static uint32* t_indirect_block_buffer;
+
 static const int print_info = 0;
 static int *Last_full_block_galaxy;
 
@@ -59,8 +74,8 @@ void write_d_indirect_block(void *buffer, uint32, uint32 logic_block_number, uin
 void write_indirect_block(void *buffer, uint32, uint32 logic_block_number, uint32 inode_number);
 void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_block_number, uint32 inode_number);
 
-void read_block_bitmap(void *buffer, int group_number);
-void read_inode_bitmap(void *buffer, int group_number);
+void read_block_bitmap(int group_number);
+void read_inode_bitmap(int group_number);
 void inode_bitmap_set(uint32 inode_number, uint8 state);
 void block_bitmap_set(uint32 inode_number, uint8 state);
 
