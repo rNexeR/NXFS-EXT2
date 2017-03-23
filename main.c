@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
 	fuse_stat = fuse_main(argc, argv, &nxfs_oper, NULL);
 
 	printf("fuse_main returned %d\n", fuse_stat);
+	// nxfs_flush();
+	device_flush();
 
 	return fuse_stat;
 }
