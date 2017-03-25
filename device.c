@@ -34,7 +34,7 @@ int device_read2(void** buffer, uint32 size){
 }
 
 void device_seek(uint32 offset){
-  printf("seek at %lu\n",offset );
+  // printf("seek at %lu\n",offset );
   fseek(f, offset, SEEK_SET);
   uint32 cur_pos = ftell(f);
   if(offset != cur_pos)
