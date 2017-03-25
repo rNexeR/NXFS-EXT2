@@ -1,5 +1,5 @@
-#ifndef nxt2fs_h
-#define nxt2fs_h
+#ifndef kjext2fs_h
+#define kjext2fs_h
 
 #include <ctype.h>
 #include <dirent.h>
@@ -64,7 +64,7 @@ void read_inode_bitmap(void *buffer, int group_number);
 void inode_bitmap_set(uint32 inode_number, uint8 state);
 void block_bitmap_set(uint32 inode_number, uint8 state);
 
-int nxfs_get_attr(const char *path, struct stat *statbuf);
+int kjfs_get_attr(const char *path, struct stat *statbuf);
 uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
 
 struct s_dir_entry2* find_last_entry(struct s_inode inode);
@@ -75,27 +75,27 @@ int take_left_entry(struct s_inode* inode, uint64 inode_number, struct s_dir_ent
 int take_right_entry(struct s_inode* inode, uint64 inode_number, struct s_dir_entry2* previous_entry);
 int remove_entry(struct s_inode *parent_inode, uint64 parent_inode_number, char* entry_name);
 
-void nxfs_stat_entry(const char *path, struct stat *statbuf);
-int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo);
-int nxfs_getattr(const char *path, struct stat *statbuf);
-void nxfs_init(struct fuse_conn_info *conn);
-int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo);
-int nxfs_statfs(const char *path, struct statvfs *statInfo);
-int nxfs_open(const char *path, struct fuse_file_info *fileInfo);
-int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo);
-int nxfs_release(const char *path, struct fuse_file_info *fileInfo);
-int nxfs_releasedir(const char *path, struct fuse_file_info *fileInfo);
+void kjfs_stat_entry(const char *path, struct stat *statbuf);
+int kjfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo);
+int kjfs_getattr(const char *path, struct stat *statbuf);
+void kjfs_init(struct fuse_conn_info *conn);
+int kjfs_opendir(const char *path, struct fuse_file_info *fileInfo);
+int kjfs_statfs(const char *path, struct statvfs *statInfo);
+int kjfs_open(const char *path, struct fuse_file_info *fileInfo);
+int kjfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo);
+int kjfs_release(const char *path, struct fuse_file_info *fileInfo);
+int kjfs_releasedir(const char *path, struct fuse_file_info *fileInfo);
 
-int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo);
-int nxfs_rename(const char *path, const char *newpath);
-int nxfs_rmdir(const char *path);
-int nxfs_mkdir(const char *path, mode_t mode);
-int nxfs_truncate(const char *path, off_t newSize);
-int nxfs_unlink(const char *path);
-int nxfs_mknod(const char *path, mode_t mode, dev_t dev);
-int nxfs_create(const char *, mode_t, struct fuse_file_info *);
+int kjfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo);
+int kjfs_rename(const char *path, const char *newpath);
+int kjfs_rmdir(const char *path);
+int kjfs_mkdir(const char *path, mode_t mode);
+int kjfs_truncate(const char *path, off_t newSize);
+int kjfs_unlink(const char *path);
+int kjfs_mknod(const char *path, mode_t mode, dev_t dev);
+int kjfs_create(const char *, mode_t, struct fuse_file_info *);
 
-int nxfs_utime(const char *, struct utimbuf *);
+int kjfs_utime(const char *, struct utimbuf *);
 
 int save_inode(struct s_inode inode, uint64 index);
 int save_meta_data();
@@ -103,4 +103,4 @@ int save_meta_data();
 }
 #endif
 
-#endif //nxfs_h
+#endif //kjfs_h

@@ -1,4 +1,4 @@
-#include "nxt2fs.h"
+#include "kjext2fs.h"
 
 /*METADATA*/
 void read_group_descriptors()
@@ -276,7 +276,7 @@ void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_
                 printf("Error getting new block\n");
             return;
         }
-        printf("ENTRO AQUI %lu %lu\n", logic_position, new_block);
+        // printf("ENTRO AQUI %lu %lu\n", logic_position, new_block);
         d_indirect_blocks[position] = new_block;
         write_empty_block(new_block);
         write_block(d_indirect_blocks, d_indirect_block, size_of_block);
@@ -538,7 +538,8 @@ long int get_free_block_in_group(uint32 group_number)
     byte buffer[size_of_block];
     read_block_bitmap(buffer, group_number);
 
-    for (long int i = 0; i < es.s_blocks_per_group; i++)
+    // for (long int i = 0; i < es.s_blocks_per_group; i++)
+    for (int i = Last_full_block_galaxy[group_number]; i < es.s_blocks_per_group; i++)
     {
         unsigned char galaxy = buffer[i/BIT];
         bool isFull = (galaxy^0xFF)==0;
@@ -562,11 +563,13 @@ long int get_free_block_in_group(uint32 group_number)
 
 long int get_free_block(uint32 group_number)
 {
-    // if (group_number<last_groupblock)group_number=last_groupblock;
+    if (group_number<last_groupblock)group_number=last_groupblock;
     long int new_block = get_free_block_in_group(group_number++);
+
     while (new_block < 0 && group_number <= number_of_groups)
     {
         new_block = get_free_block_in_group(group_number++);
+        last_groupblock=group_number;
     }
     return new_block >= 0 ? (group_number - 1) * es.s_blocks_per_group + new_block + 1 : new_block;
 }
@@ -1085,7 +1088,7 @@ void test()
 }
 
 /*FUSE FUNCTIONS*/
-void nxfs_init(struct fuse_conn_info *conn)
+void kjfs_init(struct fuse_conn_info *conn)
 {
     int status = read_sb();
     read_group_descriptors();
@@ -1094,7 +1097,7 @@ void nxfs_init(struct fuse_conn_info *conn)
     printf("\n\n");
 }
 
-int nxfs_get_attr(const char *path, struct stat *statbuf)
+int kjfs_get_attr(const char *path, struct stat *statbuf)
 {
 
     if (print_info)
@@ -1130,7 +1133,7 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
     return 0;
 }
 
-int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo)
+int kjfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo)
 {
 
     if (print_info)
@@ -1188,7 +1191,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
     return 0;
 }
 
-int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
+int kjfs_opendir(const char *path, struct fuse_file_info *fileInfo)
 {
 
     if (print_info)
@@ -1235,7 +1238,7 @@ int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
     return -ENOENT;
 }
 
-int nxfs_statfs(const char *path, struct statvfs *statInfo)
+int kjfs_statfs(const char *path, struct statvfs *statInfo)
 {
 
     statInfo->f_bsize = size_of_block;                      /* filesystem block size */
@@ -1252,7 +1255,7 @@ int nxfs_statfs(const char *path, struct statvfs *statInfo)
     return 0;
 }
 
-int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
+int kjfs_open(const char *path, struct fuse_file_info *fileInfo)
 {
     if (print_info)
         printf("open %s\n", path);
@@ -1298,7 +1301,7 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
     return -ENOENT;
 }
 
-int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
+int kjfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
     if (print_info)
         printf("read %s size %u offset %u\n", path, size, offset);
@@ -1332,21 +1335,21 @@ int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fus
     return bytes_to_read;
 }
 
-int nxfs_release(const char *path, struct fuse_file_info *fileInfo)
+int kjfs_release(const char *path, struct fuse_file_info *fileInfo)
 {
 
     free((void *)fileInfo->fh);
     return 0;
 }
 
-int nxfs_releasedir(const char *path, struct fuse_file_info *fileInfo)
+int kjfs_releasedir(const char *path, struct fuse_file_info *fileInfo)
 {
 
     free((void *)fileInfo->fh);
     return 0;
 }
 
-int nxfs_mkdir(const char *path, mode_t mode)
+int kjfs_mkdir(const char *path, mode_t mode)
 {
 
     uint32 len = strlen(path);
@@ -1422,7 +1425,7 @@ int nxfs_mkdir(const char *path, mode_t mode)
     return 0;
 }
 
-int nxfs_truncate(const char *path, off_t newSize)
+int kjfs_truncate(const char *path, off_t newSize)
 {
     char *path_child = (char *)malloc(strlen(path) + 1);
     bzero(path_child, strlen(path) + 1);
@@ -1491,7 +1494,7 @@ int nxfs_truncate(const char *path, off_t newSize)
 }
 
 /*NOT IMPLEMENTED, YET*/
-int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
+int kjfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
     if (print_info)
         printf("write %s size %lu offset %lu\n", path, size, offset);
@@ -1541,7 +1544,7 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
     return bytes_to_write;
 }
 
-int nxfs_rename(const char *path, const char *newpath)
+int kjfs_rename(const char *path, const char *newpath)
 {
     printf("\n\nrename %s newPath %s\n", path, newpath);
 
@@ -1573,7 +1576,7 @@ int nxfs_rename(const char *path, const char *newpath)
     return 0;
 }
 
-int nxfs_rmdir(const char *path)
+int kjfs_rmdir(const char *path)
 {
     printf("rmdir %s\n", path);
     char path_copy[strlen(path)+1];
@@ -1583,17 +1586,17 @@ int nxfs_rmdir(const char *path)
     struct s_inode* parent_inode = read_inode(parent_inode_number);
     struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
     if(strcmp(last_entry->name, "..") == 0){
-        nxfs_unlink(path);
+        kjfs_unlink(path);
         return 0;
     }else
         return -EPERM;
 }
 
-int nxfs_unlink(const char *path)
+int kjfs_unlink(const char *path)
 {
     printf("unlink %s\n", path);
     //truncating inode
-    nxfs_truncate(path, 0);
+    kjfs_truncate(path, 0);
 
     //free inode
     uint32 len = strlen(path);
@@ -1619,13 +1622,13 @@ int nxfs_unlink(const char *path)
     return 0;
 }
 
-int nxfs_mknod(const char *path, mode_t mode, dev_t dev)
+int kjfs_mknod(const char *path, mode_t mode, dev_t dev)
 {
     printf("mknod %s\n", path);
     return 0;
 }
 
-int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
+int kjfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 {
     printf("create %s mode %x\n", path, mode);
     char parent_name[strlen(path)];
@@ -1682,7 +1685,7 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     return 0;
 }
 
-int nxfs_utime(const char * path, struct utimbuf *times){
+int kjfs_utime(const char * path, struct utimbuf *times){
     printf("utime %s\n", path);
     return 0;
 }
