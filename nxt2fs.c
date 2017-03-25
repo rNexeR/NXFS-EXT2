@@ -21,9 +21,11 @@ void read_group_descriptors()
 
     device_seek(offset);
     uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
-    printf("size of gd %u and list %u\n",sizeof(struct s_block_group_descriptor),size_of_group_descriptor);
+    if (print_info)
+        printf("size of gd %u and list %u\n",sizeof(struct s_block_group_descriptor),size_of_group_descriptor);
     int result_read = device_read(groups_table, size_of_group_descriptor);
-    printf("result %d\n",result_read );
+    if (print_info)
+        printf("result %d\n",result_read );
     for (uint32 i = 0; i < number_of_groups; ++i)
     {
 
@@ -76,7 +78,7 @@ int save_meta_data()
 
     device_seek(1024);
     device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-    //if (print_info)
+    if (print_info)
         printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 0, 1024, 0);
 
     uint32 offset_group_descriptor = size_of_block;
@@ -85,24 +87,24 @@ int save_meta_data()
 
     uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
     //long int var = 1024 + size_of_block;
-    printf("number of groups: %d\n",number_of_groups );
+    if (print_info)
+        printf("number of groups: %d\n",number_of_groups );
   //  printf("offset %d - %lu\n", var, (unsigned)var);
     device_seek(offset_group_descriptor);
-    printf("Paso \n");
 
     device_write(groups_table, size_of_group_descriptor);
-    //if (print_info)
+    if (print_info)
         printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 0, 1024 + size_of_block + offset_group_descriptor, 1);
 
     uint64 offset = (1 * es.s_blocks_per_group) * size_of_block;
     device_seek(offset);
     device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-    //if (print_info)
+    if (print_info)
         printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 1, 1024 + offset, es.s_blocks_per_group);
 
     device_seek(offset + size_of_block);
     device_write((void*)groups_table, size_of_group_descriptor);
-    //if (print_info)
+    if (print_info)
         printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 1, 1024 + offset + size_of_block, es.s_blocks_per_group + 1);
 
     for (int i = 3; i < number_of_groups; i *= 3)
@@ -111,11 +113,11 @@ int save_meta_data()
         offset = block * size_of_block;
         device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        //if (print_info)
+        if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
         device_seek(offset + size_of_block);
         device_write((void*)groups_table, size_of_group_descriptor);
-        //if (print_info)
+        if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -238,7 +240,7 @@ void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_
         int group, index;
         locate(inode_number, es.s_inodes_per_group, &group, &index);
         long int new_block = get_free_block(group);
-        if (new_block < 0)
+        if (new_block <= 0)
         {
             if (print_info)
                 printf("Error getting new block\n");
@@ -276,7 +278,6 @@ void write_d_indirect_block(void *buffer, uint32 d_indirect_block, uint32 logic_
                 printf("Error getting new block\n");
             return;
         }
-        printf("ENTRO AQUI %lu %lu\n", logic_position, new_block);
         d_indirect_blocks[position] = new_block;
         write_empty_block(new_block);
         write_block(d_indirect_blocks, d_indirect_block, size_of_block);
@@ -299,7 +300,7 @@ void write_indirect_block(void *buffer, uint32 indirect_block, uint32 logic_posi
         int group, index;
         locate(inode_number, es.s_inodes_per_group, &group, &index);
         long int new_block = get_free_block(group);
-        if (new_block < 0)
+        if (new_block <= 0)
         {
             if (print_info)
                 printf("Error getting new block\n");
@@ -320,7 +321,7 @@ void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_b
     int group, index;
     locate(inode_number, es.s_inodes_per_group, &group, &index);
     long int new_block = get_free_block(group);
-    if (new_block < 0)
+    if (new_block <= 0)
     {
         if (print_info)
             printf("Error getting new block\n");
@@ -497,12 +498,12 @@ void block_bitmap_set(uint32 inode_number, uint8 state)
     int block_group, block_index;
     locate(inode_number, es.s_blocks_per_group, &block_group, &block_index);
 
-    // if (print_info{
-    //     printf("----------------------------------------------------\n");
-        // printf("block bitmap set %lu %u\n", inode_number, state);
-    //     printf("before bb set, first av. block %lu\n", get_free_block(block_group));
-    //     printf("block bitmap set %lu %u g: %d off: %d\n", inode_number, state, block_group, block_index);
-    // }
+    if (print_info){
+        printf("----------------------------------------------------\n");
+        printf("block bitmap set %lu %u\n", inode_number, state);
+        printf("before bb set, first av. block %lu\n", get_free_block(block_group));
+        printf("block bitmap set %lu %u g: %d off: %d\n", inode_number, state, block_group, block_index);
+    }
 
     byte buffer[size_of_block];
     read_block_bitmap(buffer, block_group);
@@ -526,11 +527,11 @@ void block_bitmap_set(uint32 inode_number, uint8 state)
     }
 
     write_block(buffer, groups_table[block_group].bg_block_bitmap, size_of_block);
-    // if (print_info)
-    // {
-    //     printf("after bb set, first av. block %lu\n", get_free_block(block_group));
-    //     printf("----------------------------------------------------\n");
-    // }
+    if (print_info)
+    {
+        printf("after bb set, first av. block %lu\n", get_free_block(block_group));
+        printf("----------------------------------------------------\n");
+    }
 }
 
 long int get_free_block_in_group(uint32 group_number)
@@ -574,16 +575,11 @@ long int get_free_block(uint32 group_number)
 /*FREE BLOCKS*/
 void free_i_logic_block(uint32 i_indirect_block, uint32 logic_position)
 {
-    printf("llego aqui\n");
     uint32 i_indirect_blocks[indirect_blocks_count];
-    printf("llego aqui\n");
     read_block(i_indirect_blocks, i_indirect_block, size_of_block);
-    printf("llego aqui\n");
-    printf("logic_position %lu", logic_position);
-    printf("indirect_block[position] %lu", i_indirect_blocks[logic_position]);
     if (i_indirect_blocks[logic_position] != 0)
     {
-        // if (print_info)
+        if (print_info)
             printf("free data Block: %d\n", i_indirect_blocks[logic_position]);
         block_bitmap_set(i_indirect_blocks[logic_position], 0);
     }
@@ -596,8 +592,6 @@ void free_d_logic_block(uint32 d_indirect_block, uint32 logic_position)
 
     uint32 position = logic_position / (indirect_blocks_count);
     uint32 offset = logic_position - position * indirect_blocks_count;
-    printf("free d_indirect_block %lu\n", d_indirect_blocks[position]);
-    printf("offset %lu\n", offset);
     free_i_logic_block(d_indirect_blocks[position], offset);
 }
 
@@ -695,28 +689,6 @@ void free_indirect_blocks(struct s_inode *child_inode)
             printf("free t indirect Block: %d\n", child_inode->i_t_indirect);
         block_bitmap_set(child_inode->i_t_indirect, 0);
     }
-}
-
-/*PRINT INODE BLOCKS*/
-void print_inode_indirect_blocks(uint32 block_number){
-    uint32 buffer[indirect_blocks_count];
-    read_block(buffer, block_number, size_of_block);
-    for(uint16 i =0; i < indirect_blocks_count; i++){
-        if(buffer[i] > 0)
-            printf("%lu ", buffer[i]);
-    }
-}
-
-void print_inode_blocks(struct s_inode *child_inode)
-{
-    printf("direct blocks\n");
-    for(int i = 0; i < 12; i++){
-        printf("%lu ", child_inode->i_direct[i]);
-    }
-    printf("\n");
-    printf("indirect_blocks [%lu]\n", child_inode->i_indirect);
-    print_inode_indirect_blocks(child_inode->i_indirect);
-    printf("\n");
 }
 
 /*ENTRIES*/
@@ -1071,9 +1043,9 @@ void test()
 
     printf("next inode available: %d\n", get_free_inode(0));
 
-    uint32 indirect_blocks = indirect_blocks_count;
-    uint32 d_indirect_blocks = indirect_blocks * indirect_blocks;
-    uint32 t_indirect_blocks = d_indirect_blocks * indirect_blocks;
+    // uint32 indirect_blocks = indirect_blocks_count;
+    // uint32 d_indirect_blocks = indirect_blocks * indirect_blocks;
+    // uint32 t_indirect_blocks = d_indirect_blocks * indirect_blocks;
 
     printf("sizeof struct s_inode %lu\n", sizeof(struct s_inode));
     printf("sizeof es.inode %lu\n", es.s_inode_size);
@@ -1357,10 +1329,12 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
     uint32 dir_name_len = strlen(dir_name);
 
-    printf("mkdir %s parent_dir %s mode %x\n", dir_name, parent, mode);
+    if (print_info)
+        printf("mkdir %s parent_dir %s mode %x\n", dir_name, parent, mode);
 
     uint32 parent_inode_number = lookup_entry_inode(parent, ROOT_INO);
-    printf("Parent number %d\n", parent_inode_number);
+    if (print_info)
+        printf("Parent number %d\n", parent_inode_number);
 
     struct s_inode *parent_inode = read_inode(parent_inode_number);
 
@@ -1369,7 +1343,8 @@ int nxfs_mkdir(const char *path, mode_t mode)
     locate(parent_inode_number, es.s_inodes_per_group, &parent_inode_group, &parent_inode_index);
 
     long int new_inode = get_free_inode(parent_inode_group);
-    printf("Nuevo inode devuelto %d del grupo %d\n", new_inode, parent_inode_group);
+    if (print_info)
+        printf("Nuevo inode devuelto %d del grupo %d\n", new_inode, parent_inode_group);
     if (new_inode < 0)
         return -ENOENT;
     // ----
@@ -1389,7 +1364,8 @@ int nxfs_mkdir(const char *path, mode_t mode)
     s_new_inode.i_t_indirect = 0;
 
     int result = add_entry(parent_inode, parent_inode_number, new_inode, dir_name, ENTRY_DIR);
-    printf("result: %d\n", result);
+    if (print_info)
+        printf("result: %d\n", result);
 
     //set new inode and first block as used in bitmap and save inode
     inode_bitmap_set(new_inode, 1);
@@ -1407,13 +1383,15 @@ int nxfs_mkdir(const char *path, mode_t mode)
     //dot entry for new dir
     strcpy(new_entry_name, ".");
     result = add_entry(&s_new_inode, new_inode, new_inode, new_entry_name, ENTRY_DIR);
-    printf("result for dot (.): %d\n", result);
+    if (print_info)
+        printf("result for dot (.): %d\n", result);
     //save_inode(s_new_inode,new_inode);
 
     //dot dot entry for new dir
     strcpy(new_entry_name, "..");
     result = add_entry(&s_new_inode, new_inode, parent_inode_number, new_entry_name, ENTRY_DIR);
-    printf("result for dot (..): %d\n", result);
+    if (print_info)
+        printf("result for dot (..): %d\n", result);
     //save_inode(s_new_inode,new_inode);
     save_meta_data();
 
@@ -1456,7 +1434,7 @@ int nxfs_truncate(const char *path, off_t newSize)
     if (inode_blocks * size_of_block < child_inode->i_size)
         inode_blocks += 1;
     uint32 new_block_size = newSize / size_of_block;
-    // if (print_info)
+    if (print_info)
         printf("inode_blocks: %d\n", inode_blocks);
 
     if (newSize == 0)
@@ -1543,7 +1521,8 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
 
 int nxfs_rename(const char *path, const char *newpath)
 {
-    printf("\n\nrename %s newPath %s\n", path, newpath);
+    if (print_info)
+        printf("\n\nrename %s newPath %s\n", path, newpath);
 
     uint32 len = strlen(path);
     char parent[len];
@@ -1575,7 +1554,8 @@ int nxfs_rename(const char *path, const char *newpath)
 
 int nxfs_rmdir(const char *path)
 {
-    printf("rmdir %s\n", path);
+    if (print_info)
+        printf("rmdir %s\n", path);
     char path_copy[strlen(path)+1];
     strncpy(path_copy, path, strlen(path));
     path_copy[strlen(path)] = 0;
@@ -1621,24 +1601,29 @@ int nxfs_unlink(const char *path)
 
 int nxfs_mknod(const char *path, mode_t mode, dev_t dev)
 {
-    printf("mknod %s\n", path);
+    if (print_info)
+        printf("mknod %s\n", path);
     return 0;
 }
 
 int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 {
-    printf("create %s mode %x\n", path, mode);
+    if (print_info)
+        printf("create %s mode %x\n", path, mode);
     char parent_name[strlen(path)];
     char child_name[strlen(path)];
     parseNewEntry(path,parent_name,child_name);
-    printf("padre :%s hijo:%s\n",parent_name,child_name);
+    if (print_info)
+        printf("padre :%s hijo:%s\n",parent_name,child_name);
     uint32 parent_inode_number = lookup_entry_inode(parent_name, ROOT_INO);
-    printf("parent inode number %d\n", parent_inode_number);
+    if (print_info)
+        printf("parent inode number %d\n", parent_inode_number);
     struct s_inode *inode = read_inode(parent_inode_number);
     int parent_inode_group, parent_inode_index;
     locate(parent_inode_number,es.s_inodes_per_group, &parent_inode_group,&parent_inode_index);
     long int new_inode = get_free_inode(parent_inode_group);
-    printf("Nuevo inode devuelto %d del grupo %d\n", new_inode, parent_inode_group);
+    if (print_info)
+        printf("Nuevo inode devuelto %d del grupo %d\n", new_inode, parent_inode_group);
     if (new_inode < 0)
         return -ENOENT;
 
@@ -1663,16 +1648,14 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     fileInfo->fh = (uint64_t)fh;
 
     int result = add_entry(inode, parent_inode_number, new_inode, child_name, ENTRY_FILE);
-    printf("result: %d\n", result);
+    if (print_info)
+        printf("result: %d\n", result);
 
     //set new inode and first block as used in bitmap and save inode
     inode_bitmap_set(new_inode, 1);
-    printf("result1: %d\n", result);
     // block_bitmap_set(first_block,1);
     save_inode(s_new_inode,new_inode);
-    printf("result2: %d\n", result);
     save_meta_data();
-    printf("result3: %d\n", result);
     free(inode);
     //int result = add_entry(*inode, parent_inode_number, child_name, mode, ENTRY_FILE);
     //printf("result: %d\n", result);
@@ -1683,6 +1666,7 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 }
 
 int nxfs_utime(const char * path, struct utimbuf *times){
-    printf("utime %s\n", path);
+    if (print_info)
+        printf("utime %s\n", path);
     return 0;
 }
