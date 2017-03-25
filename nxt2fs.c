@@ -1085,7 +1085,7 @@ void test()
 }
 
 /*FUSE FUNCTIONS*/
-void nxfs_init(struct fuse_conn_info *conn)
+void fs_init(struct fuse_conn_info *conn)
 {
     int status = read_sb();
     read_group_descriptors();
@@ -1094,7 +1094,7 @@ void nxfs_init(struct fuse_conn_info *conn)
     printf("\n\n");
 }
 
-int nxfs_get_attr(const char *path, struct stat *statbuf)
+int fs_get_attr(const char *path, struct stat *statbuf)
 {
 
     if (print_info)
@@ -1130,7 +1130,7 @@ int nxfs_get_attr(const char *path, struct stat *statbuf)
     return 0;
 }
 
-int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo)
+int fs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo)
 {
 
     if (print_info)
@@ -1188,7 +1188,7 @@ int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off
     return 0;
 }
 
-int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
+int fs_opendir(const char *path, struct fuse_file_info *fileInfo)
 {
 
     if (print_info)
@@ -1235,7 +1235,7 @@ int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo)
     return -ENOENT;
 }
 
-int nxfs_statfs(const char *path, struct statvfs *statInfo)
+int fs_statfs(const char *path, struct statvfs *statInfo)
 {
 
     statInfo->f_bsize = size_of_block;                      /* filesystem block size */
@@ -1252,7 +1252,7 @@ int nxfs_statfs(const char *path, struct statvfs *statInfo)
     return 0;
 }
 
-int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
+int fs_open(const char *path, struct fuse_file_info *fileInfo)
 {
     if (print_info)
         printf("open %s\n", path);
@@ -1298,7 +1298,7 @@ int nxfs_open(const char *path, struct fuse_file_info *fileInfo)
     return -ENOENT;
 }
 
-int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
+int fs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
     if (print_info)
         printf("read %s size %u offset %u\n", path, size, offset);
@@ -1332,21 +1332,21 @@ int nxfs_read(const char *path, char *buf, size_t size, off_t offset, struct fus
     return bytes_to_read;
 }
 
-int nxfs_release(const char *path, struct fuse_file_info *fileInfo)
+int fs_release(const char *path, struct fuse_file_info *fileInfo)
 {
 
     free((void *)fileInfo->fh);
     return 0;
 }
 
-int nxfs_releasedir(const char *path, struct fuse_file_info *fileInfo)
+int fs_releasedir(const char *path, struct fuse_file_info *fileInfo)
 {
 
     free((void *)fileInfo->fh);
     return 0;
 }
 
-int nxfs_mkdir(const char *path, mode_t mode)
+int fs_mkdir(const char *path, mode_t mode)
 {
 
     uint32 len = strlen(path);
@@ -1422,7 +1422,7 @@ int nxfs_mkdir(const char *path, mode_t mode)
     return 0;
 }
 
-int nxfs_truncate(const char *path, off_t newSize)
+int fs_truncate(const char *path, off_t newSize)
 {
     char *path_child = (char *)malloc(strlen(path) + 1);
     bzero(path_child, strlen(path) + 1);
@@ -1491,7 +1491,7 @@ int nxfs_truncate(const char *path, off_t newSize)
 }
 
 /*NOT IMPLEMENTED, YET*/
-int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
+int fs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo)
 {
     if (print_info)
         printf("write %s size %lu offset %lu\n", path, size, offset);
@@ -1541,7 +1541,7 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
     return bytes_to_write;
 }
 
-int nxfs_rename(const char *path, const char *newpath)
+int fs_rename(const char *path, const char *newpath)
 {
     printf("\n\nrename %s newPath %s\n", path, newpath);
 
@@ -1573,7 +1573,7 @@ int nxfs_rename(const char *path, const char *newpath)
     return 0;
 }
 
-int nxfs_rmdir(const char *path)
+int fs_rmdir(const char *path)
 {
     printf("rmdir %s\n", path);
     char path_copy[strlen(path)+1];
@@ -1583,17 +1583,17 @@ int nxfs_rmdir(const char *path)
     struct s_inode* parent_inode = read_inode(parent_inode_number);
     struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
     if(strcmp(last_entry->name, "..") == 0){
-        nxfs_unlink(path);
+        fs_unlink(path);
         return 0;
     }else
         return -EPERM;
 }
 
-int nxfs_unlink(const char *path)
+int fs_unlink(const char *path)
 {
     printf("unlink %s\n", path);
     //truncating inode
-    nxfs_truncate(path, 0);
+    fs_truncate(path, 0);
 
     //free inode
     uint32 len = strlen(path);
@@ -1619,13 +1619,13 @@ int nxfs_unlink(const char *path)
     return 0;
 }
 
-int nxfs_mknod(const char *path, mode_t mode, dev_t dev)
+int fs_mknod(const char *path, mode_t mode, dev_t dev)
 {
     printf("mknod %s\n", path);
     return 0;
 }
 
-int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
+int fs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
 {
     printf("create %s mode %x\n", path, mode);
     char parent_name[strlen(path)];
@@ -1682,7 +1682,7 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     return 0;
 }
 
-int nxfs_utime(const char * path, struct utimbuf *times){
+int fs_utime(const char * path, struct utimbuf *times){
     printf("utime %s\n", path);
     return 0;
 }
