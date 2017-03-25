@@ -1,5 +1,5 @@
-#ifndef fuse_x_h
-#define fuse_x_h
+#ifndef dev_ops_h
+#define dev_ops_h
 
 #include <ctype.h>
 #include <dirent.h>
