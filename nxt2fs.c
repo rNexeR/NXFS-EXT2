@@ -156,7 +156,7 @@ void read_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_p
     uint32 t_indirect_blocks[indirect_blocks_count];
     read_block(t_indirect_blocks, t_indirect_block, size_of_block);
 
-    uint32 position = logic_position / (indirect_blocks_count);
+    uint32 position = logic_position / (d_indirect_blocks_count);
     uint32 offset = logic_position - position * d_indirect_blocks_count;
 
     if (print_info)
@@ -227,7 +227,7 @@ void write_t_indirect_block(void *buffer, uint32 t_indirect_block, uint32 logic_
     uint32 t_indirect_blocks[indirect_blocks_count];
     read_block(t_indirect_blocks, t_indirect_block, size_of_block);
 
-    uint32 position = logic_position / (indirect_blocks_count);
+    uint32 position = logic_position / (d_indirect_blocks_count);
     uint32 offset = logic_position - position * d_indirect_blocks_count;
 
     if (print_info)
@@ -347,6 +347,7 @@ void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_b
                 block_bitmap_set(new_block, 1);
                 write_empty_block(new_block);
             }
+            //printf("logic b in t_indirect %lu\n",logic_block_number);
             write_t_indirect_block(buffer, inode->i_t_indirect, logic_block_number - d_indirect_blocks_count, inode_number);
         }
         else if (logic_block_number >= indirect_blocks_count)
@@ -357,6 +358,7 @@ void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_b
                 block_bitmap_set(new_block, 1);
                 write_empty_block(new_block);
             }
+            //printf("logic b in t_indirect %lu\n",logic_block_number);
             write_d_indirect_block(buffer, inode->i_d_indirect, logic_block_number - indirect_blocks_count, inode_number);
         }
         else
@@ -604,7 +606,7 @@ void free_t_logic_block(uint32 t_indirect_block, uint32 logic_position)
     uint32 t_indirect_blocks[indirect_blocks_count];
     read_block(t_indirect_blocks, t_indirect_block, size_of_block);
 
-    uint32 position = logic_position / (indirect_blocks_count);
+    uint32 position = logic_position / (d_indirect_blocks_count);
     uint32 offset = logic_position - position * d_indirect_blocks_count;
 
     free_d_logic_block(t_indirect_blocks[position], offset);
