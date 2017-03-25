@@ -538,22 +538,22 @@ int get_free_block_in_group(uint32 group_number)
 
     for (int i = 0; i < es.s_blocks_per_group; i++)
     {
-        // unsigned char galaxy = buffer[i/BIT];
-        // bool isFull = (galaxy^0xFF)==0;
-        // if (print_info{
-        //     printf("i: %d, group_number: %d, isFull: %d\n",i,group_number, isFull);
-        //     printf("Last_full_block_galaxy[group_number]: %d\n", Last_full_block_galaxy[group_number]);
-        // }
-        // if (isFull){
-        //     i+=BIT-1;
-        //     Last_full_block_galaxy[group_number]=i;
-        //     continue;
-        // }else{
-        //     if (print_info)
-        //         printf("galaxy: %d\n", galaxy);
+        unsigned char galaxy = buffer[i/BIT];
+        bool isFull = (galaxy^0xFF)==0;
+        if (print_info){
+            printf("i: %d, group_number: %d, isFull: %d\n",i,group_number, isFull);
+            printf("Last_full_block_galaxy[group_number]: %d\n", Last_full_block_galaxy[group_number]);
+        }
+        if (isFull){
+            i+=BIT-1;
+            Last_full_block_galaxy[group_number]=i;
+            continue;
+        }else{
+            if (print_info)
+                printf("galaxy: %d\n", galaxy);
             if (bitmapGet(buffer, i) == 0)
                 return i;
-        // }
+        }
     }
     return -1;
 }
