@@ -13,15 +13,7 @@ int write_block(void* buffer, uint32 block_number, uint32 size_of_block) {
 }
 
 int device_write(void *buffer, uint32 size){
-
-  /*if(size == SUPERBLOCK_SIZE_TO_SAVE){
-    struct s_superblock sb = (struct s_superblock)(*buffer);
-    printf("cantidad de inodes : %u\n",sb.s_inodes_count );
-    printf("magic  : %u\n",sb.s_magic );
-    printf("s_pad : %u\n",sb.s_pad );
-  }*/
   unsigned int siz = fwrite(buffer, 1, size, f);
-  // printf("size %d\n", siz);
   return ( siz == size );
 }
 

@@ -1,4 +1,4 @@
-#include "nxt2fs.h"
+#include "fuse_x.h"
 #include "device.h"
 
 #include <fuse.h>
@@ -25,9 +25,7 @@ int main(int argc, char *argv[]) {
 	fusx_oper.statfs = fusx_statfs;
 	fusx_oper.opendir = fusx_opendir;
 	fusx_oper.readdir = fusx_read_dir;
-
 	fusx_oper.init = fusx_init;
-
 	fusx_oper.utime = fusx_utime;
 
 	printf("Mounting FS.\n");
