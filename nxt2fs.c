@@ -194,7 +194,7 @@ int read_inode_logic_block(void *buffer, struct s_inode inode, uint32 logic_bloc
 {
     if (logic_block_number < EXT2_NDIR_BLOCKS)
     {
-        if (inode.i_direct[logic_block_number] >= es.s_firts_inode)
+        if (inode.i_direct[logic_block_number] > 0)
             read_block(buffer, inode.i_direct[logic_block_number], size_of_block);
         else
             return -1;
@@ -370,7 +370,7 @@ void write_inode_logic_block(void *buffer, struct s_inode* inode, uint32 logic_b
             write_indirect_block(buffer, inode->i_indirect, logic_block_number, inode_number);
         }
     }
-    // save_inode(*inode, inode_number);
+    save_inode(*inode, inode_number);
 }
 
 /*INODES*/
@@ -767,7 +767,6 @@ struct s_dir_entry2 *find_last_entry(struct s_inode inode)
     uint16 c_size = 0;
 
     entry = (struct s_dir_entry2 *)block;
-
     if (error<0)
         return NULL;
 
@@ -1579,7 +1578,6 @@ int nxfs_rmdir(const char *path)
     strncpy(path_copy, path, strlen(path));
     path_copy[strlen(path)] = 0;
     uint32 parent_inode_number = lookup_entry_inode(path_copy,ROOT_INO);
-
     struct s_inode* parent_inode = read_inode(parent_inode_number);
     struct s_dir_entry2* last_entry = find_last_entry(*parent_inode);
     if(strcmp(last_entry->name, "..") == 0){
