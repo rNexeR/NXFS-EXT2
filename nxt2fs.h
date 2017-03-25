@@ -78,7 +78,7 @@ int remove_entry(struct s_inode *parent_inode, uint64 parent_inode_number, char*
 void nxfs_stat_entry(const char *path, struct stat *statbuf);
 int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo);
 int nxfs_getattr(const char *path, struct stat *statbuf);
-void nxfs_init(struct fuse_conn_info *conn);
+void* nxfs_init(struct fuse_conn_info *conn);
 int nxfs_opendir(const char *path, struct fuse_file_info *fileInfo);
 int nxfs_statfs(const char *path, struct statvfs *statInfo);
 int nxfs_open(const char *path, struct fuse_file_info *fileInfo);

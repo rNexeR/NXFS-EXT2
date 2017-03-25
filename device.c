@@ -20,7 +20,7 @@ int device_write(void *buffer, uint32 size){
     printf("magic  : %u\n",sb.s_magic );
     printf("s_pad : %u\n",sb.s_pad );
   }*/
-  int siz = fwrite(buffer, 1, size, f);
+  unsigned int siz = fwrite(buffer, 1, size, f);
   // printf("size %d\n", siz);
   return ( siz == size );
 }
@@ -45,7 +45,7 @@ struct stat device_stat(){
 
 int device_open(const char *path) {
   device_path = path;
-  int path_len = strlen(path);
+  // int path_len = strlen(path);
   printf("path %s\n", device_path);
   f = fopen(path, "r+");
 

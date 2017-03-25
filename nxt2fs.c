@@ -22,7 +22,7 @@ void read_group_descriptors()
     device_seek(offset);
     uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
     //printf("size of gd %u and list %u\n",sizeof(struct s_block_group_descriptor),size_of_group_descriptor);
-    int result_read = device_read(groups_table, size_of_group_descriptor);
+    /*int result_read = */device_read(groups_table, size_of_group_descriptor);
     //printf("result %d\n",result_read );
     //for (uint32 i = 0; i < number_of_groups; ++i)
     {
@@ -1036,7 +1036,7 @@ int remove_entry(struct s_inode *parent_inode, uint64 parent_inode_number, char*
     if(strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0)
         return -EPERM;
 
-    uint32 entry_name_len = strlen(entry_name);
+    // uint32 entry_name_len = strlen(entry_name);
     ////printf("new entry name len %lu\n", entry_name_len);
 
     int parent_inode_group, parent_inode_index;
@@ -1090,9 +1090,9 @@ void test()
 
     //printf("next inode available: %d\n", get_free_inode(0));
 
-    uint32 indirect_blocks = indirect_blocks_count;
-    uint32 d_indirect_blocks = indirect_blocks * indirect_blocks;
-    uint32 t_indirect_blocks = d_indirect_blocks * indirect_blocks;
+    // uint32 indirect_blocks = indirect_blocks_count;
+    // uint32 d_indirect_blocks = indirect_blocks * indirect_blocks;
+    // uint32 t_indirect_blocks = d_indirect_blocks * indirect_blocks;
 
     //printf("sizeof struct s_inode %lu\n", sizeof(struct s_inode));
     //printf("sizeof es.inode %lu\n", es.s_inode_size);
@@ -1104,12 +1104,14 @@ void test()
 }
 
 /*FUSE FUNCTIONS*/
-void nxfs_init(struct fuse_conn_info *conn)
+void* nxfs_init(struct fuse_conn_info *conn)
 {
-    int status = read_sb();
+    read_sb();
     read_group_descriptors();
 
-    test();
+    //test();
+
+    return 0;
     //printf("\n\n");
 }
 
@@ -1379,7 +1381,7 @@ int nxfs_mkdir(const char *path, mode_t mode)
 
     parseNewEntry(path, parent, dir_name);
 
-    uint32 dir_name_len = strlen(dir_name);
+    // uint32 dir_name_len = strlen(dir_name);
 
     //printf("mkdir %s parent_dir %s mode %x\n", dir_name, parent, mode);
 
@@ -1412,7 +1414,7 @@ int nxfs_mkdir(const char *path, mode_t mode)
     s_new_inode.i_d_indirect = 0;
     s_new_inode.i_t_indirect = 0;
 
-    int result = add_entry(parent_inode, parent_inode_number, new_inode, dir_name, ENTRY_DIR);
+    /*int result = */add_entry(parent_inode, parent_inode_number, new_inode, dir_name, ENTRY_DIR);
     //printf("result: %d\n", result);
 
     //set new inode and first block as used in bitmap and save inode
@@ -1430,13 +1432,13 @@ int nxfs_mkdir(const char *path, mode_t mode)
     bzero(new_entry_name,ENTRY_BASE_SIZE);
     //dot entry for new dir
     strcpy(new_entry_name, ".");
-    result = add_entry(&s_new_inode, new_inode, new_inode, new_entry_name, ENTRY_DIR);
+    /*result = */add_entry(&s_new_inode, new_inode, new_inode, new_entry_name, ENTRY_DIR);
     //printf("result for dot (.): %d\n", result);
     //save_inode(s_new_inode,new_inode);
 
     //dot dot entry for new dir
     strcpy(new_entry_name, "..");
-    result = add_entry(&s_new_inode, new_inode, parent_inode_number, new_entry_name, ENTRY_DIR);
+    /*result = */add_entry(&s_new_inode, new_inode, parent_inode_number, new_entry_name, ENTRY_DIR);
     //printf("result for dot (..): %d\n", result);
     //save_inode(s_new_inode,new_inode);
     save_meta_data();
@@ -1479,7 +1481,7 @@ int nxfs_truncate(const char *path, off_t newSize)
     uint32 inode_blocks = child_inode->i_size / size_of_block;
     if (inode_blocks * size_of_block < child_inode->i_size)
         inode_blocks += 1;
-    uint32 new_block_size = newSize / size_of_block;
+    // uint32 new_block_size = newSize / size_of_block;
     // if (print_info)
         //printf("inode_blocks: %d\n", inode_blocks);
 
@@ -1523,7 +1525,7 @@ int nxfs_write(const char *path, const char *buf, size_t size, off_t offset, str
     if (print_info){
         //printf("write %s size %lu offset %lu\n", path, size, offset);
     }
-    int bytes_to_write = size;
+    unsigned int bytes_to_write = size;
 
     struct s_file_handle *fh = (struct s_file_handle *)fileInfo->fh;
 
@@ -1690,7 +1692,7 @@ int nxfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     fh->f_blocks_count = 0;
     fileInfo->fh = (uint64_t)fh;
 
-    int result = add_entry(inode, parent_inode_number, new_inode, child_name, ENTRY_FILE);
+    /*int result = */add_entry(inode, parent_inode_number, new_inode, child_name, ENTRY_FILE);
     //printf("result: %d\n", result);
 
     //set new inode and first block as used in bitmap and save inode
