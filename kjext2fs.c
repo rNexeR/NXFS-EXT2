@@ -76,7 +76,7 @@ int save_meta_data()
 
     device_seek(1024);
     device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-    //if (print_info)
+    if (print_info)
         printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 0, 1024, 0);
 
     uint32 offset_group_descriptor = size_of_block;
@@ -85,24 +85,24 @@ int save_meta_data()
 
     uint32 size_of_group_descriptor = sizeof(struct s_block_group_descriptor) * number_of_groups;
     //long int var = 1024 + size_of_block;
-    printf("number of groups: %d\n",number_of_groups );
+    if (print_info)
+        printf("number of groups: %d\n",number_of_groups );
   //  printf("offset %d - %lu\n", var, (unsigned)var);
     device_seek(offset_group_descriptor);
-    printf("Paso \n");
 
     device_write(groups_table, size_of_group_descriptor);
-    //if (print_info)
+    if (print_info)
         printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 0, 1024 + size_of_block + offset_group_descriptor, 1);
 
     uint64 offset = (1 * es.s_blocks_per_group) * size_of_block;
     device_seek(offset);
     device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-    //if (print_info)
+    if (print_info)
         printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", 1, 1024 + offset, es.s_blocks_per_group);
 
     device_seek(offset + size_of_block);
     device_write((void*)groups_table, size_of_group_descriptor);
-    //if (print_info)
+    if (print_info)
         printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", 1, 1024 + offset + size_of_block, es.s_blocks_per_group + 1);
 
     for (int i = 3; i < number_of_groups; i *= 3)
@@ -111,11 +111,11 @@ int save_meta_data()
         offset = block * size_of_block;
         device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        //if (print_info)
+        if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
         device_seek(offset + size_of_block);
         device_write((void*)groups_table, size_of_group_descriptor);
-        //if (print_info)
+        if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -125,11 +125,11 @@ int save_meta_data()
         offset = block * size_of_block;
         device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        //if (print_info)
+        if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
         device_seek(offset + size_of_block);
         device_write((void*)groups_table, size_of_group_descriptor);
-        //if (print_info)
+        if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -139,11 +139,11 @@ int save_meta_data()
         offset = block * size_of_block;
         device_seek(offset);
         device_write(&es, SUPERBLOCK_SIZE_TO_SAVE);
-        //if (print_info)
+        if (print_info)
             printf("Saved s_superblock: %d, offset bytes: %d, block: %d\n", i, offset, block);
         device_seek(offset + size_of_block);
         device_write((void*)groups_table, size_of_group_descriptor);
-        //if (print_info)
+        if (print_info)
             printf("Saved groups_table: %d, offset bytes: %d, block: %d\n", i, offset + size_of_block, block + 1);
     }
 
@@ -577,16 +577,16 @@ long int get_free_block(uint32 group_number)
 /*FREE BLOCKS*/
 void free_i_logic_block(uint32 i_indirect_block, uint32 logic_position)
 {
-    printf("llego aqui\n");
+    // printf("llego aqui\n");
     uint32 i_indirect_blocks[indirect_blocks_count];
-    printf("llego aqui\n");
+    // printf("llego aqui\n");
     read_block(i_indirect_blocks, i_indirect_block, size_of_block);
-    printf("llego aqui\n");
-    printf("logic_position %lu", logic_position);
-    printf("indirect_block[position] %lu", i_indirect_blocks[logic_position]);
+    // printf("llego aqui\n");
+    // printf("logic_position %lu", logic_position);
+    // printf("indirect_block[position] %lu", i_indirect_blocks[logic_position]);
     if (i_indirect_blocks[logic_position] != 0)
     {
-        // if (print_info)
+        if (print_info)
             printf("free data Block: %d\n", i_indirect_blocks[logic_position]);
         block_bitmap_set(i_indirect_blocks[logic_position], 0);
     }
@@ -599,8 +599,11 @@ void free_d_logic_block(uint32 d_indirect_block, uint32 logic_position)
 
     uint32 position = logic_position / (indirect_blocks_count);
     uint32 offset = logic_position - position * indirect_blocks_count;
-    printf("free d_indirect_block %lu\n", d_indirect_blocks[position]);
-    printf("offset %lu\n", offset);
+    if (print_info)
+    {
+        printf("free d_indirect_block %lu\n", d_indirect_blocks[position]);
+        printf("offset %lu\n", offset);
+    }
     free_i_logic_block(d_indirect_blocks[position], offset);
 }
 
@@ -1112,7 +1115,7 @@ int kjfs_get_attr(const char *path, struct stat *statbuf)
     uint32 entry_inode = lookup_entry_inode(path_copy, ROOT_INO);
     if (entry_inode == 0)
     {
-        printf("entry_inode not found for %s\n", path);
+        printf("entry inode not found: %s\n", path);
         return -ENOENT;
     }
 
@@ -1546,7 +1549,7 @@ int kjfs_write(const char *path, const char *buf, size_t size, off_t offset, str
 
 int kjfs_rename(const char *path, const char *newpath)
 {
-    printf("\n\nrename %s newPath %s\n", path, newpath);
+    // printf("\n\nrename %s newPath %s\n", path, newpath);
 
     uint32 len = strlen(path);
     char parent[len];
@@ -1666,16 +1669,20 @@ int kjfs_create(const char *path, mode_t mode, struct fuse_file_info *fileInfo)
     fileInfo->fh = (uint64_t)fh;
 
     int result = add_entry(inode, parent_inode_number, new_inode, child_name, ENTRY_FILE);
-    printf("result: %d\n", result);
+    if (print_info)
+        printf("result: %d\n", result);
 
     //set new inode and first block as used in bitmap and save inode
     inode_bitmap_set(new_inode, 1);
-    printf("result1: %d\n", result);
+    if (print_info)
+        printf("result1: %d\n", result);
     // block_bitmap_set(first_block,1);
     save_inode(s_new_inode,new_inode);
-    printf("result2: %d\n", result);
+    if (print_info)
+        printf("result2: %d\n", result);
     save_meta_data();
-    printf("result3: %d\n", result);
+    if (print_info)
+        printf("result3: %d\n", result);
     free(inode);
     //int result = add_entry(*inode, parent_inode_number, child_name, mode, ENTRY_FILE);
     //printf("result: %d\n", result);
