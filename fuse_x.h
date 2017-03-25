@@ -1,3 +1,5 @@
+#ifndef fuse_x_h
+#define fuse_x_h
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,4 +32,6 @@ int fusx_create(const char *, mode_t, struct fuse_file_info *);
 int fusx_utime(const char *, struct utimbuf *);
 #ifdef __cplusplus
 }
+#endif
+
 #endif
