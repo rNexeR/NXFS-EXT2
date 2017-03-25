@@ -27,8 +27,7 @@ void device_flush();
 int read_block(void* buffer, uint32 block_number, uint32 size_of_block);
 int write_block(void* buffer, uint32 block_number, uint32 size_of_block);
 int device_read(void* buffer, uint32 size);
-void device_seek(uint32 offset);
-int device_read2(void** buffer, uint32 size);
+void device_seek(uint64 offset);
 int device_write(void *buffer, uint32 size);
 struct stat device_stat();
 

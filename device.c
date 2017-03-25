@@ -29,11 +29,7 @@ int device_read(void* buffer, uint32 size){
   return ( fread(buffer, 1, size, f) == size );
 }
 
-int device_read2(void** buffer, uint32 size){
-  return ( fread(*buffer, 1, size, f) == size );
-}
-
-void device_seek(uint32 offset){
+void device_seek(uint64 offset){
   // printf("seek at %lu\n",offset );
   fseek(f, offset, SEEK_SET);
   uint32 cur_pos = ftell(f);

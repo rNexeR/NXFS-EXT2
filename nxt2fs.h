@@ -45,10 +45,9 @@ static uint32 t_indirect_blocks_count;
 void read_group_descriptors();
 int read_sb();
 struct s_inode* read_inode(uint32);
-int get_free_group_inode(uint32);
-int get_free_block_in_group(uint32 group_number);
-uint32 get_free_inode(uint32);
-uint32 get_free_block(uint32);
+long int get_free_block_in_group(uint32 group_number);
+long int get_free_inode(uint32);
+long int get_free_block(uint32);
 
 void read_t_indirect_block(void *, uint32, uint32);
 void read_d_indirect_block(void *, uint32, uint32);
@@ -71,10 +70,10 @@ uint32 lookup_entry_inode(char *path, uint32 current_inode_number);
 struct s_dir_entry2* find_last_entry(struct s_inode inode);
 struct s_dir_entry2* find_entry(struct s_inode inode, const char* entry_name);
 struct s_dir_entry2* find_previous_entry(struct s_inode inode, const char *entry_name);
-int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, int new_inode, char *entry_name, uint8 file_type);
-int take_left_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_entry2* to_delete_entry);
-int take_right_entry(struct s_inode* inode, uint32 inode_number, struct s_dir_entry2* previous_entry);
-int remove_entry(struct s_inode *parent_inode, uint32 parent_inode_number, char* entry_name);
+int add_entry(struct s_inode *parent_inode, uint32 parent_inode_number, uint32 new_inode, char *entry_name, uint8 file_type);
+int take_left_entry(struct s_inode* inode, uint64 inode_number, struct s_dir_entry2* to_delete_entry);
+int take_right_entry(struct s_inode* inode, uint64 inode_number, struct s_dir_entry2* previous_entry);
+int remove_entry(struct s_inode *parent_inode, uint64 parent_inode_number, char* entry_name);
 
 void nxfs_stat_entry(const char *path, struct stat *statbuf);
 int nxfs_read_dir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo);
@@ -98,7 +97,7 @@ int nxfs_create(const char *, mode_t, struct fuse_file_info *);
 
 int nxfs_utime(const char *, struct utimbuf *);
 
-int save_inode(struct s_inode inode, uint32 index);
+int save_inode(struct s_inode inode, uint64 index);
 int save_meta_data();
 #ifdef __cplusplus
 }
